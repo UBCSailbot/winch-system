@@ -13,7 +13,13 @@
 #define CLOCKWISE 1
 #define ANTICLOCKWISE 2
 
+//-- Pawl threshold values
+#define RIGHT_THRES 345
+#define LEFT_THRES 345
+#define CAM_THRES 200 //???
+
 extern int cur_direction;
+extern int isGearMotorOn;
 
 //-- Move the main pawls depending on the cur_direction
 int move_pawl(void);

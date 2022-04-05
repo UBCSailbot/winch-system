@@ -7,6 +7,7 @@
 
 #include "pawl.h"
 #include <msp430.h>
+#include "gearmotor.h"
 
 /**
  * Set the state of the paws to either engaged or disengaged
@@ -53,7 +54,7 @@ static int disengageRight(void) {
     //-- Error checking to see if we could receive pawl_right data
     if (pawl_right < 0) return -1;
 
-    if (pawl_right <= /*Threshold*/) {
+    if (pawl_right <= RIGHT_THRES) {
         //-- Already disengaged (Why?)
         return -2;
     }
@@ -69,7 +70,7 @@ static int disengageRight(void) {
 
         if (++tries > /*Max motor tries*/) return -3;
         motor_increment++;
-    } while (pawl_right > Threshold);
+    } while (pawl_right > RIGHT_THRES);
 
 
     return 0;
@@ -85,17 +86,18 @@ static int disengageLeft(void) {
     //-- Error checking to see if we could receive pawl_right data
     if (pawl_left < 0) return -1;
 
-    if (pawl_left <= /*Threshold*/) {
+    if (pawl_left <= LEFT_THRES) {
         //-- Already disengaged (Why?)
         return -2;
     }
 
     do {
-        startGearMotor(/*forward*/, /*SPEED*/, /*Timeout*/);
+        //-- Backward - Medium speed
+        startGearMotor(0, MEDIUM, /*Timeout*/);
 
         moveMainMotor(/*direction*/, motor_increment);
 
-        /* Wait until gear motor timeout */
+        while (isGearMotorOn);
 
         receive_hallsensors(NULL, NULL, &pawl_left);
 
