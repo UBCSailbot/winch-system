@@ -60,7 +60,7 @@ static int disengageRight(void) {
     }
 
     do {
-        startGearMotor(/*forward*/, /*SPEED*/, /*Timeout*/);
+        startGearMotor(1, MEDIUM, /*Timeout*/);
 
         moveMainMotor(/*direction*/, motor_increment);
 
@@ -81,7 +81,7 @@ static int disengageLeft(void) {
     int motor_increment = 0;
     int tries = 0;
 
-    receive_hallsensors(NULL, NULL, &pawl_left);
+    receive_hallsensors(&pawl_left, NULL, NULL);
 
     //-- Error checking to see if we could receive pawl_right data
     if (pawl_left < 0) return -1;
@@ -99,18 +99,45 @@ static int disengageLeft(void) {
 
         while (isGearMotorOn);
 
-        receive_hallsensors(NULL, NULL, &pawl_left);
+        receive_hallsensors(&pawl_left, NULL, NULL);
 
-        if (++tries > /*Max motor tries*/) return -3;
+        if (++tries > /*Max tries*/) return -3;
         motor_increment++;
-    } while (pawl_left > Threshold);
+    } while (pawl_left > LEFT_THRES);
 
 
     return 0;
 }
 
 static int disengageBoth(void) {
-    // TODO: Moving Cam to center position using the negative or positive value read from SPI
+    int cam;
+    int tries = 0;
+    int timeout = /*Default Timeout*/;
+
+    receive_hallsensors(NULL, &cam, NULL);
+
+    if (cam <= CAM_THRES) {
+        //-- Already disengaged (Why?)
+        return -2;
+    }
+
+    do {
+        timeout -= tries * /*Scalar*/;
+
+        if (cam > 0) {
+            //-- Move gear motor forward
+            startGearMotor(1, SLOW, timeout);
+        } else {
+            startGearMotor(0, SLOW, timeout);
+        }
+
+        //-- Wait until gear motor stops
+        while (isGearMotorOn);
+
+        receive_hallsensors(NULL, &cam, NULL);
+
+        if (++tries > /* Max tries */) return -3;
+    } while (cam > CAM_THRES)
 }
 
 

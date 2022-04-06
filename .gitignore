@@ -50,4 +50,14 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-/.metadata/
+.metadata/
+
+# Custom ignors 
+.jxbrowser.userdata/
+dvt/
+.tempFiles/
+RemoteSystemsTempFiles/
+lnk_*
+.settings/
+Debug/
+targetConfigs/
