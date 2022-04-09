@@ -25,6 +25,8 @@ int main(void)
     init_gearmotor();
     init_UART_DBG();
 
+    __enable_interrupt();
+
     switch(TEST_SEL) {
     case MOVE_TIME_T:
         test_motorMovementTimeout();
@@ -41,26 +43,36 @@ int main(void)
 void test_motorMovementTimeout(void) {
 
     //--Start the gearMotor with 1s timeout Forward
-    startGearMotor(1, FAST, 1);
-    V_Print("GEAR MOTOR STARTED - FAST\n\r")
+    startGearMotor(1, SLOW, 0.2);
 
     while(GearMotorOn);
 
     //--Start the gearMotor with 1s timeout Backward
-    startGearMotor(0, MEDIUM, 1);
-    V_Print("GEAR MOTOR STARTED - MEDIUM\n\r")
+    startGearMotor(0, SLOW, 0.2);
 
     while(GearMotorOn);
 
+    __delay_cycles(35000);
+
     //--Start the gearMotor with 1s timeout Forward
-    startGearMotor(1, SLOW, 1);
-    V_Print("GEAR MOTOR STARTED - SLOW\n\r")
+    startGearMotor(1, MEDIUM, 0.2);
+
+    while(GearMotorOn);
+
+    //--Start the gearMotor with 1s timeout Backward
+    startGearMotor(0, MEDIUM, 0.2);
+
+    while(GearMotorOn);
+
+    __delay_cycles(35000);
+
+    //--Start the gearMotor with 1s timeout Forward
+    startGearMotor(1, FAST, 0.1);
 
     while(GearMotorOn);
 
     //--Start the gearMotor with 0.5s timeout Backward
-    startGearMotor(0, MEDIUM, 0.5);
-    V_Print("GEAR MOTOR STARTED - MEDIUM\n\r")
+    startGearMotor(0, FAST, 0.1);
 
     while(GearMotorOn);
 

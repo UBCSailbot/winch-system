@@ -35,7 +35,7 @@ extern int GearMotorOn;
 void init_gearmotor(void);
 
 //-- Starts the gear motor to either forward (1) or backward (0) direction
-void startGearMotor(int forward, int speed, int timeout);
+void startGearMotor(int forward, int speed, float timeout);
 
 //-- Stops the gear motor from moving
 void stopGearMotor(void);

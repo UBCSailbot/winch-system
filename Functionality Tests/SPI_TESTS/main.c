@@ -8,7 +8,7 @@
 #define CONF_T 2
 
 //-- CONTROL
-#define TEST_SEL POT_T
+#define TEST_SEL CONF_T
 #define VERBOSE 1
 
 void test_pot(void);
@@ -48,11 +48,11 @@ void test_pot(void) {
         receive_potentiometer(&pot_data);
 
         if (VERBOSE) {
-            sprintf(str, "Pot_data: %d\n\r", pot_data);
+            sprintf(str, "Pot_data: %d\n\r\0", pot_data);
             putString(str);
         }
 
-        __delay_cycles(250000);
+        __delay_cycles(2500000);
     }
 
 }
@@ -62,14 +62,13 @@ void test_hallConfig(void) {
     char str[50] = "";
 
     while (1) {
-        return_data = configHall(AIN0_CONF); /* 0x14AA */
+        return_data = configHall(AIN0_CONF); /* 0x14AB */
 
         if (VERBOSE) {
             sprintf(str, "SUCCESS: %s\n\r", return_data ? "NO" : "YES");
             putString(str);
         }
 
-        __delay_cycles(250000);
     }
 }
 

@@ -8,6 +8,7 @@
 #include <msp430.h>
 #include <stdio.h>
 #include "spi.h"
+#include "debug.h"
 
 
 /**
@@ -28,7 +29,7 @@ void init_spi(void) {
     UCA0CTLW0 |= UCMST;         // Master mode
     UCA0CTLW0 |= UCMSB;         // MSB first
 
-    UCA0BRW |= 0x02;            // 1 Mhz/2
+    UCA0BRW |= 0x03;            // 1 Mhz/2
 
     //-- Port configuration
 
@@ -104,18 +105,28 @@ void receive_potentiometer(unsigned int* pot_data) {
  *
  * return 0 if set and -1 otherwise
  */
-int configHall(int config) {
-    int returned_config = 0;
+int configHall(unsigned int config) {
+    unsigned long returned_config = 0;
     int attempts = 0;
 
-    do {
-        //-- We receive the configuration value in the most significant 2 bytes
-        returned_config = spi_io(config, 4, CS_HALL);
 
+    do {
+
+        P3OUT &= ~CS_HALL;
+        //-- We receive the configuration value in the most significant 2 bytes
+        spi_io(config, 2, CS_HALL);
+
+        // Can only receive 2 bytes (2 byte registers on MSP430
+
+        returned_config = spi_io(config, 2, CS_HALL);
+
+        P3OUT |= CS_HALL;
         //-- bit shift 2 bytes to the right to get configuration value
-        returned_config >>= 16;
+        //returned_config >>= 16;
 
         if (++attempts > 4) return -1;
+
+        __delay_cycles(250000);
     } while (returned_config != config);
 
     return 0;
@@ -129,14 +140,13 @@ int configHall(int config) {
  * bytes - number of bytes being sent
  * enable - the slave device being communicated with in P3
  */
-static int spi_io(unsigned int data, int bytes, int chipSel) {
-    int rx_buf, offset;
-    int rx_data = 0;
-    int tmp;
+static unsigned long spi_io(unsigned int data, int bytes, int chipSel) {
+    unsigned int rx_buf, offset;
+    unsigned int rx_data = 0;
+    unsigned int tmp;
     int i = 1;
 
-
-    P3OUT &= ~chipSel;
+    //P3OUT &= ~chipSel;
 
     for (i = 1; i <= bytes; i++) {
         offset =  8*(bytes - i);
@@ -151,14 +161,14 @@ static int spi_io(unsigned int data, int bytes, int chipSel) {
 
         //-- Receive MSB first
         rx_buf = UCA0RXBUF;
-        rx_data |= rx_buf << offset;
+        rx_data += rx_buf << offset;
     }
 
     while (UCBUSY & UCA0STATW);     // Wait until not busy
 
     rx_buf = UCA0RXBUF;             // Receive dummy byte
 
-    P3OUT |= chipSel;
+    //P3OUT |= chipSel;
 
     return rx_data;
 }
