@@ -8,3 +8,4 @@
 ## Tests
 
 - [x] motorMovementTimeout - Moves motor in left and right direction with a specified timeout input
+- [x] test_receiveSPI - Moves the motor and gets SPI data. Log in SPI_log.txt file
