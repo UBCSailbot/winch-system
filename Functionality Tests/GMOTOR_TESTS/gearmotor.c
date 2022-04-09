@@ -42,9 +42,9 @@ void init_gearmotor(void) {
     P1OUT |= ENABLE;
 
 
-    TB0CCR0 = D_PWM_UPPERC; //-- Timer_B Main timer 0.03125s
+    TB0CCR0 = D_PWM_UPPERC; //-- Timer_B Main timer 700Hz
     TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset
-    TB0CTL |= TBSSEL_1;     //-- Clock ACLK (32.768 khz)
+    TB0CTL |= TBSSEL_2;     //-- Clock SMCLK (1 Mhz)
 
 
     //-- Initialize timeout timer --
@@ -57,7 +57,7 @@ void init_gearmotor(void) {
 
 }
 
-void startGearMotor(int forward, int speed, float timeout) {
+void startGearMotor(int forward, int speed, int timeout) {
 
     PJOUT &= ~MODE;     //-- FAST decay mode
 
@@ -72,7 +72,7 @@ void startGearMotor(int forward, int speed, float timeout) {
     TB0CTL |= MC_1;     //-- Count up mode
 
     //-- Timeout timer --
-    TA1CCR0 = timeout * CLKFREQ;
+    TA1CCR0 = timeout * CLKFREQ/1000;
     TA1CTL |= MC_1;     //-- Count up mode
     TA1CTL |= TACLR;    //-- Clear timer count
 

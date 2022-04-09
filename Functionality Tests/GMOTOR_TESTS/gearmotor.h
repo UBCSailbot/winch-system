@@ -21,12 +21,12 @@
 
 //-- Defaults
 #define D_TIMEOUTC  32768   /* 1s default timeout */
-#define D_PWM_UPPERC 1600   /* 0.05s default PWM upper count */
+#define D_PWM_UPPERC 1438   /* 700Hz default PWM upper count */
 
 //-- Motor Speed
-#define FAST    160        /* 90% duty */
-#define MEDIUM  800      /* 50% duty */
-#define SLOW    1280        /* 20% duty */
+#define FAST    143        /* 90% duty */
+#define MEDIUM  719      /* 50% duty */
+#define SLOW    1150        /* 20% duty */
 
 //-- Gear motor state
 extern int GearMotorOn;
@@ -35,7 +35,7 @@ extern int GearMotorOn;
 void init_gearmotor(void);
 
 //-- Starts the gear motor to either forward (1) or backward (0) direction
-void startGearMotor(int forward, int speed, float timeout);
+void startGearMotor(int forward, int speed, int timeout);
 
 //-- Stops the gear motor from moving
 void stopGearMotor(void);

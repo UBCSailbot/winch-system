@@ -67,8 +67,10 @@ void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
         if (configHall(AIN0_CONF) < 0) {
             *pawl_left = -1;
         } else {
+            P3OUT &= ~CS_HALL;
             //-- Receive Hall sensor data
             *pawl_left = spi_io(0, 2, CS_HALL);
+            P3OUT |= CS_HALL;
         }
     }
 
@@ -76,8 +78,10 @@ void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
         if (configHall(AIN1_CONF) < 0) {
             *cam = -1;
         } else {
+            P3OUT &= ~CS_HALL;
             //-- Receive Hall sensor data
             *cam = spi_io(0, 2, CS_HALL);
+            P3OUT |= CS_HALL;
         }
      }
 
@@ -85,8 +89,10 @@ void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
         if (configHall(AIN2_CONF) < 0) {
             *pawl_right = -1;
         } else {
+            P3OUT &= ~CS_HALL;
             //-- Receive Hall sensor data
             *pawl_right = spi_io(0, 2, CS_HALL);
+            P3OUT |= CS_HALL;
         }
      }
 }
@@ -106,7 +112,7 @@ void receive_potentiometer(unsigned int* pot_data) {
  * return 0 if set and -1 otherwise
  */
 int configHall(unsigned int config) {
-    unsigned long returned_config = 0;
+    int returned_config = 0;
     int attempts = 0;
 
 
@@ -140,10 +146,10 @@ int configHall(unsigned int config) {
  * bytes - number of bytes being sent
  * enable - the slave device being communicated with in P3
  */
-static unsigned long spi_io(unsigned int data, int bytes, int chipSel) {
-    unsigned int rx_buf, offset;
-    unsigned int rx_data = 0;
-    unsigned int tmp;
+static int spi_io(int data, int bytes, int chipSel) {
+    int rx_buf, offset;
+    int rx_data = 0;
+    int tmp;
     int i = 1;
 
     //P3OUT &= ~chipSel;

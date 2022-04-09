@@ -29,7 +29,7 @@ void receive_potentiometer(unsigned int* pot_data);
 int configHall(unsigned int config);
 
 //-- Sends and receives integer data through SPI one byte at a time
-static unsigned long spi_io(unsigned int data, int bytes, int chipSel);
+static int spi_io(int data, int bytes, int chipSel);
 
 
 #endif /* SPI_H_ */
