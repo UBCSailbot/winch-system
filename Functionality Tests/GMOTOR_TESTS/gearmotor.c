@@ -41,12 +41,10 @@ void init_gearmotor(void) {
     P1SEL0 |= BIT4;
     P1OUT |= ENABLE;
 
-    //-- Timer_B Main timer 0.03125s
-    TB0CCR0 = D_PWM_UPPERC;
-    //-- OUTMOD - Toggle/reset
-    TB0CCTL1 |= OUTMOD_2;
-    //-- Clock ACLK (32.768 khz)
-    TB0CTL |= TBSSEL_1;
+
+    TB0CCR0 = D_PWM_UPPERC; //-- Timer_B Main timer 0.03125s
+    TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset
+    TB0CTL |= TBSSEL_1;     //-- Clock ACLK (32.768 khz)
 
 
     //-- Initialize timeout timer --
