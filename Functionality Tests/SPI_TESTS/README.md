@@ -25,5 +25,5 @@ Note:
 
 ## Tests
 
-- [] test_pot - Gets potentiometer data through SPI
+- [ ] test_pot - Gets potentiometer data through SPI
 - [x] test_hallConfig - Configures and verifies that the ADC was configured
