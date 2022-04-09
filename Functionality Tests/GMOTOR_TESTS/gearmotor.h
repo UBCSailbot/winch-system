@@ -19,14 +19,14 @@
 
 #define CLKFREQ 32000
 
+//-- Defaults
+#define D_TIMEOUTC  32768   /* 1s default timeout */
+#define D_PWM_UPPERC 1600   /* 0.05s default PWM upper count */
+
 //-- Motor Speed
 #define FAST    160        /* 90% duty */
 #define MEDIUM  800      /* 50% duty */
 #define SLOW    1280        /* 20% duty */
-
-//-- Defaults
-#define D_TIMEOUTC  32000   /* 1s default timeout */
-#define D_PWM_UPPERC 1600   /* 0.05s default PWM upper count */
 
 //-- Gear motor state
 extern int GearMotorOn;
