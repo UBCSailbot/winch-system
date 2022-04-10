@@ -17,11 +17,16 @@
 //-- Port 1
 #define ENABLE BIT4
 
-//-- Motor Speed
-#define FAST        /* 90% duty */
-#define MEDIUM      /* 50% duty */
-#define SLOW        /* 20% duty */
+#define CLKFREQ 32000
 
+//-- Defaults
+#define D_TIMEOUTC  32768   /* 1s default timeout */
+#define D_PWM_UPPERC 1438   /* 700Hz default PWM upper count */
+
+//-- Motor Speed
+#define FAST    143        /* 90% duty */
+#define MEDIUM  719      /* 50% duty */
+#define SLOW    1150        /* 20% duty */
 
 //-- Initializes the gear motor - PWM and timeout
 void init_gearmotor(void);

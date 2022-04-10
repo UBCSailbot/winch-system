@@ -4,10 +4,11 @@
  *  Created on: Apr. 4, 2022
  *      Author: mlokh
  */
+#include <msp430.h>
 #include "gearmotor.h"
 
-int isGearMotorOn = 0;
-
+//-- State of gearmotor
+int GearMotorOn = 0;
 
 void init_gearmotor(void) {
 
@@ -42,57 +43,49 @@ void init_gearmotor(void) {
     P1SEL0 |= BIT4;
     P1OUT |= ENABLE;
 
-    //-- Timer_B Main timer 0.03125s
-    TB0CCR0 = /*Upper count*/;
 
-    //-- OUTMOD - Toggle/reset
-    TB0CCTL1 |= OUTMOD_2;
-
-    //-- Clock ACLK (32 khz)
-    TB0CTL |= TBSSEL_1;
+    TB0CCR0 = D_PWM_UPPERC; //-- Timer_B Main timer 700Hz
+    TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset
+    TB0CTL |= TBSSEL_2;     //-- Clock SMCLK (1 Mhz)
 
 
-    //-- Initialize timeout timer
+    //-- Initialize timeout timer --
+
     //-- Timer_A Main timer 1s
-    TA1CCR0 = /*Default timeout*/;
-
-    TA1CCTL0 |= CCIE;
-
-    //-- ACLK (32 khz) / 2
+    TA1CCR0 = D_TIMEOUTC;
+    //-- ACLK (32.768 khz) / 2
     TA1CTL |= TASSEL_1;
+
 
 }
 
 void startGearMotor(int forward, int speed, int timeout) {
 
-    //-- Gear motor PWM --
+    PJOUT &= ~MODE;     //-- FAST decay mode
 
-    //-- Slow decay mode
-    PJOUT |= MODE;
-
-    //-- Direction
+    //-- Direction --
     if (forward) PJOUT |= PHASE;
     else PJOUT &= ~PHASE;
 
-    //-- IC active
-    PJOUT |= NSLEEP;
+    PJOUT |= NSLEEP;    //-- IC active
 
+    //-- PWM control --
+    TB0CCR1 = speed;
+    TB0CTL |= MC_1;     //-- Count up mode
 
     //-- Timeout timer --
-    //-- MC - UP
-    TB0CTL |= MC_1;
+    TA1CCR0 = timeout * CLKFREQ/1000;
+    TA1CTL |= MC_1;     //-- Count up mode
+    TA1CTL |= TACLR;    //-- Clear timer count
 
-    //-- Timeout timer
-    TA1CCR0 = timeout;
-
-    //-- Count up mode
-    TA1CTL |= MC_1;
+    TA1CCTL0 |= CCIE;   //-- Enable interrupts
 
     //-- Set motor state to running
-    isGearMotorOn = 1;
+    GearMotorOn = 1;
 }
 
 void stopGearMotor(void) {
+
     //-- MC - idle, Disable PWM
     TB0CTL &= ~MC_1;
 
@@ -102,14 +95,19 @@ void stopGearMotor(void) {
     //-- Disable count up mode (No timeout)
     TA1CTL &= ~MC_1;
 
-    isGearMotorOn = 0;
+    GearMotorOn = 0;
+
+    //-- Disable interrupts
+    TA1CCTL0 &= ~CCIE;
+
+    TA1CTL |= TACLR;
 }
 
 #pragma vector = TIMER1_A0_VECTOR;
 __interrupt void TIMER1_A0_ISR (void) {
 
     //-- Clear flag
-    TA1CTL &= ~TAIFG;
+    TA1CCTL0 &= ~CCIFG;
 
     stopGearMotor();
 }

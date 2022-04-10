@@ -5,9 +5,12 @@
  *      Author: mlokh
  */
 
-#include "pawl.h"
 #include <msp430.h>
+#include <stdio.h>
 #include "gearmotor.h"
+#include "pawl.h"
+#include "spi.h"
+
 
 /**
  * Set the state of the paws to either engaged or disengaged
@@ -26,18 +29,21 @@
  * Return: 0 when success and -1 otherwise
  */
 int move_pawl(void) {
+    int err = 0;
     switch(cur_direction) {
     case CLOCKWISE:
-        disengageRight();
+        err = disengageLeft();
         break;
     case ANTICLOCKWISE:
-        disengageLeft();
+        err = disengageRight();
         break;
     case REST:
-        disengageBoth();
+        err = disengageBoth();
         break;
 
     }
+
+    return err;
 }
 
 
@@ -45,7 +51,7 @@ int move_pawl(void) {
  * Functions to control pawl movement
  */
 static int disengageRight(void) {
-    int pawl_left, cam, pawl_right;
+    int pawl_right;
     int motor_increment = 0;
     int tries = 0;
 
@@ -60,15 +66,16 @@ static int disengageRight(void) {
     }
 
     do {
-        startGearMotor(1, MEDIUM, /*Timeout*/);
+        if (++tries > MAX_TRIES) return -3;
 
-        moveMainMotor(/*direction*/, motor_increment);
+        startGearMotor(1, MEDIUM, 100);
 
-        /* Wait until gear motor timeout */
+        // TODO: moveMainMotor(/*direction*/, motor_increment);
+
+        while (GearMotorOn);
 
         receive_hallsensors(NULL, NULL, &pawl_right);
 
-        if (++tries > /*Max motor tries*/) return -3;
         motor_increment++;
     } while (pawl_right > RIGHT_THRES);
 
@@ -92,16 +99,17 @@ static int disengageLeft(void) {
     }
 
     do {
+        if (++tries > MAX_TRIES) return -3;
+
         //-- Backward - Medium speed
-        startGearMotor(0, MEDIUM, /*Timeout*/);
+        startGearMotor(0, MEDIUM, 100);
 
-        moveMainMotor(/*direction*/, motor_increment);
+        // TODO: moveMainMotor(/*direction*/, motor_increment);
 
-        while (isGearMotorOn);
+        while (GearMotorOn);
 
         receive_hallsensors(&pawl_left, NULL, NULL);
 
-        if (++tries > /*Max tries*/) return -3;
         motor_increment++;
     } while (pawl_left > LEFT_THRES);
 
@@ -112,7 +120,7 @@ static int disengageLeft(void) {
 static int disengageBoth(void) {
     int cam;
     int tries = 0;
-    int timeout = /*Default Timeout*/;
+    int timeout = 50;
 
     receive_hallsensors(NULL, &cam, NULL);
 
@@ -122,7 +130,7 @@ static int disengageBoth(void) {
     }
 
     do {
-        timeout -= tries * /*Scalar*/;
+        //timeout -= tries * /*Scalar*/;
 
         if (cam > 0) {
             //-- Move gear motor forward
@@ -132,12 +140,14 @@ static int disengageBoth(void) {
         }
 
         //-- Wait until gear motor stops
-        while (isGearMotorOn);
+        while (GearMotorOn);
 
         receive_hallsensors(NULL, &cam, NULL);
 
-        if (++tries > /* Max tries */) return -3;
-    } while (cam > CAM_THRES)
+        if (++tries > MAX_TRIES) return -3;
+    } while (cam > CAM_THRES);
+
+    return 0;
 }
 
 

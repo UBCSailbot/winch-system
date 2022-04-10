@@ -14,12 +14,14 @@
 #define ANTICLOCKWISE 2
 
 //-- Pawl threshold values
-#define RIGHT_THRES 345
-#define LEFT_THRES 345
+#define RIGHT_THRES 3250
+#define LEFT_THRES 6000
 #define CAM_THRES 200 //???
 
+#define MAX_TRIES 10
+
 extern int cur_direction;
-extern int isGearMotorOn;
+extern int GearMotorOn;
 
 //-- Move the main pawls depending on the cur_direction
 int move_pawl(void);
