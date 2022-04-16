@@ -26,7 +26,7 @@
 //-- Motor Speed
 #define FAST    143        /* 90% duty */
 #define MEDIUM  719      /* 50% duty */
-#define SLOW    1150        /* 20% duty */
+#define SLOW    1007        /* 30% duty */
 
 //-- Initializes the gear motor - PWM and timeout
 void init_gearmotor(void);

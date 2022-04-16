@@ -61,3 +61,10 @@ lnk_*
 .settings/
 Debug/
 targetConfigs/
+
+*.ccsproject
+*.cproject
+*.ccxml
+
+**.launches/
+

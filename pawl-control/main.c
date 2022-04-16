@@ -31,19 +31,19 @@ int main(void)
 	            cur_direction = ANTICLOCKWISE;
 	            break;
 	        case 'r':
+	            cur_direction = REST;
 	            break;
 	        }
 
 	        if (move_pawl() == 0) {
 	                V_PRINT("SUCCESS\r\n");
 	            }else {
-	                V_PRINT("FAIL");
+	                V_PRINT("FAIL\r\n");
 	        }
 
 	        rx_ready = 0;
 	    }
 	}
-	for(;;);
 }
 
 

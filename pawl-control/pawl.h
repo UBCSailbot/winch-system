@@ -14,11 +14,12 @@
 #define ANTICLOCKWISE 2
 
 //-- Pawl threshold values
-#define RIGHT_THRES 3250
-#define LEFT_THRES 6000
-#define CAM_THRES 200 //???
+#define RIGHT_THRES 8550
+#define LEFT_THRES 12000
+#define CAM_THRES_UPPER 2500
+#define CAM_THRES_LOWER -2500
 
-#define MAX_TRIES 10
+#define MAX_TRIES 3
 
 extern int cur_direction;
 extern int GearMotorOn;

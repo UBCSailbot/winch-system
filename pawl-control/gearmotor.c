@@ -53,7 +53,7 @@ void init_gearmotor(void) {
 
     //-- Timer_A Main timer 1s
     TA1CCR0 = D_TIMEOUTC;
-    //-- ACLK (32.768 khz) / 2
+    //-- ACLK (32.768 khz)
     TA1CTL |= TASSEL_1;
 
 

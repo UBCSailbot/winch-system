@@ -54,6 +54,7 @@ static int disengageRight(void) {
     int pawl_right;
     int motor_increment = 0;
     int tries = 0;
+    int spi_tries = 0;
 
     receive_hallsensors(NULL, NULL, &pawl_right);
 
@@ -74,7 +75,12 @@ static int disengageRight(void) {
 
         while (GearMotorOn);
 
-        receive_hallsensors(NULL, NULL, &pawl_right);
+        do{
+            receive_hallsensors(NULL, NULL, &pawl_right);
+            if (++spi_tries > MAX_TRIES) return -4;
+        } while (pawl_right == -1);
+
+        spi_tries = 0;
 
         motor_increment++;
     } while (pawl_right > RIGHT_THRES);
@@ -87,6 +93,7 @@ static int disengageLeft(void) {
     int pawl_left;
     int motor_increment = 0;
     int tries = 0;
+    int spi_tries = 0;
 
     receive_hallsensors(&pawl_left, NULL, NULL);
 
@@ -108,7 +115,12 @@ static int disengageLeft(void) {
 
         while (GearMotorOn);
 
-        receive_hallsensors(&pawl_left, NULL, NULL);
+        do{
+            receive_hallsensors(&pawl_left, NULL, NULL);
+            if (++spi_tries > MAX_TRIES) return -4;
+        } while (pawl_left == -1);
+
+        spi_tries = 0;
 
         motor_increment++;
     } while (pawl_left > LEFT_THRES);
@@ -121,31 +133,44 @@ static int disengageBoth(void) {
     int cam;
     int tries = 0;
     int timeout = 50;
+    const int offset = 14781;
+    int spi_tries = 0;
 
     receive_hallsensors(NULL, &cam, NULL);
 
-    if (cam <= CAM_THRES) {
+    if (cam < 0) return -1;
+
+    cam -= offset;
+
+    if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
         //-- Already disengaged (Why?)
         return -2;
     }
 
     do {
-        //timeout -= tries * /*Scalar*/;
-
         if (cam > 0) {
-            //-- Move gear motor forward
-            startGearMotor(1, SLOW, timeout);
-        } else {
+            //-- Move gear motor backward
             startGearMotor(0, SLOW, timeout);
+        } else {
+            startGearMotor(1, SLOW, timeout);
         }
 
         //-- Wait until gear motor stops
         while (GearMotorOn);
 
-        receive_hallsensors(NULL, &cam, NULL);
+        do{
+            receive_hallsensors(NULL, &cam, NULL);
+            if (++spi_tries > MAX_TRIES) return -4;
+        } while (cam == -1);
+
+        spi_tries = 0;
+
+        cam -= offset;
 
         if (++tries > MAX_TRIES) return -3;
-    } while (cam > CAM_THRES);
+
+        timeout -= 5;
+    } while (cam > CAM_THRES_UPPER || cam < CAM_THRES_LOWER);
 
     return 0;
 }
