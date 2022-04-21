@@ -43,7 +43,7 @@ void init_gearmotor(void) {
 
 
     TB0CCR0 = D_PWM_UPPERC; //-- Timer_B Main timer 700Hz
-    TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset
+    TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset TODO: test this set OUTMODE to the wrong reg
     TB0CTL |= TBSSEL_2;     //-- Clock SMCLK (1 Mhz)
 
 
@@ -51,7 +51,7 @@ void init_gearmotor(void) {
 
     //-- Timer_A Main timer 1s
     TA1CCR0 = D_TIMEOUTC;
-    //-- ACLK (32.768 khz) / 2
+    //-- ACLK (32.768 khz)
     TA1CTL |= TASSEL_1;
 
 
