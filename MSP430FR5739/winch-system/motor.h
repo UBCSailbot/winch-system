@@ -12,6 +12,9 @@
 #define STEP BIT4;
 #define DIR BIT2;
 
+//-- Port P1.0
+#define ON_MOTOR BIT0
+
 //-- Direction definitions
 #define REST 0
 #define CLOCKWISE 1

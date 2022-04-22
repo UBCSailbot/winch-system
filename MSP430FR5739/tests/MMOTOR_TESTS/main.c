@@ -1,19 +1,14 @@
 #include <msp430.h> 
 #include "motor.h"
 #include "debug.h"
-
-int cur_direction;
+#include "uart.h"
 
 //-- Types of tests
 #define MOVE_MOTOR 1
 
 //-- CONTROL
 #define TEST_SEL MOVE_MOTOR
-#define VERBOSE 1
 #define INCREMENT 2000
-
-#define V_PRINT(str) if(VERBOSE) {putString(str);}
-
 
 void test_mainMotorMovement(void);
 
@@ -24,7 +19,7 @@ int main(void)
 {
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
 	
-	init_UART_DBG();
+	init_uart();
 	init_Main_Motor();
 
 	__enable_interrupt();
@@ -36,19 +31,16 @@ int main(void)
 	}
 
 	while(1);
-
-	return 0;
 }
 
 void test_mainMotorMovement(void) {
 
-    V_PRINT("Test Main Motor Movement - Clockwise\r\n");
-    cur_direction = CLOCKWISE;
+    V_PRINTF("TEST main motor movement \r\n");
 
-    if(startMainMotor(INCREMENT) < 0) {
-        V_PRINT("UNSUCCESSFUL\r\n");
+    if(incrementMainMotor(CLOCKWISE, INCREMENT) < 0) {
+        V_PRINTF("UNSUCCESSFUL\r\n");
     } else {
-        V_PRINT("SUCCESSFUL\r\n");
+        V_PRINTF("SUCCESSFUL\r\n");
     }
 }
 

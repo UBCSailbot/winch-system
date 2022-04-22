@@ -37,6 +37,9 @@ void init_Main_Motor(void) {
     TB1CCTL1 |= OUTMOD_2;           // Toggle set mode
     TB1CTL |= TBSSEL_2;             // SMCLK 1 Mhz
 
+    //-- Enable port that is connected to input 4 on the motor controller
+    P1DIR |= ON_MOTOR;
+    P1OUT &= ~ON_MOTOR;
 }
 
 int incrementMainMotor(int direction, int increment) {
@@ -53,6 +56,9 @@ int incrementMainMotor(int direction, int increment) {
     default:
         return -1;  // Action not completed
     }
+
+    //-- Enable motor through motor controller
+    P1OUT |= ON_MOTOR;
 
     motor_increment = increment;
 
@@ -105,6 +111,9 @@ int setMainMotorPosition(int position) {
         return -4;  // Action not completed
     }
 
+    //-- Enable motor through motor controller
+    P1OUT |= ON_MOTOR;
+
     TB1CTL |= TBCLR; // Clear timer count
     TB1CTL |= MC_1;   //-- Count up mode
 
@@ -137,6 +146,7 @@ int setMainMotorPosition(int position) {
 void stopMainMotor(void) {
     TB1CTL &= ~MC_1;    // Hault PWM timer
     TB1CTL |= TBCLR;    // Clear timer count
+    P1OUT &= ~ON_MOTOR;   // Disable Motor through motor controller
 }
 
 
