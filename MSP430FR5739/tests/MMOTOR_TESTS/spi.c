@@ -105,10 +105,15 @@ int receive_potentiometer(unsigned int* pot_data) {
     int tries = 0;
 
     do {
+        P3OUT &= ~CS_POT;
         *pot_data = spi_io(0x55, 2, CS_POT);
+        P3OUT |= CS_POT;
+        V_PRINTF("POT data: %d \r\n", *pot_data);
+
         if (++tries > MAX_POT_TRIES) return -1;
 
-    } while (*pot_data >= 500 && *pot_data <= 4500);
+    } while (*pot_data < 500 || *pot_data > 4500);
+
 
     return 0;
 }
@@ -159,6 +164,7 @@ static int spi_io(int data, int bytes, int chipSel) {
     int rx_data = 0;
     int tmp;
     int i = 1;
+
 
     //P3OUT &= ~chipSel;
 

@@ -8,7 +8,7 @@
 #define CONF_T 2
 
 //-- CONTROL
-#define TEST_SEL CONF_T
+#define TEST_SEL POT_T
 #define VERBOSE 1
 
 void test_pot(void);

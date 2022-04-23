@@ -10,7 +10,7 @@
 #include "uart.h"
 
 
-static int rx_flag;
+static int rx_flag = 0;
 char rxbuf[RXBUF_LEN] = "";
 size_t bufpos = 0;
 size_t state  = READ;
@@ -94,7 +94,7 @@ static void update_buffer(char c) {
 
 }
 
-// USCI_A1 interrupt ISR
+//-- USCI_A1 interrupt ISR
 #pragma vector = USCI_A1_VECTOR
 __interrupt void USCI_A1_ISR(void) {
     char c = 0;

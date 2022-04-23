@@ -9,6 +9,7 @@
 #include "spi.h"
 
 int motor_increment;
+volatile int motor_state;
 
 
 /**
@@ -19,6 +20,7 @@ int motor_increment;
 void init_Main_Motor(void) {
 
     motor_increment = 0;
+    motor_state = OFF;
 
     //-- Init DIR port to output
     P2DIR |= DIR;
@@ -34,9 +36,12 @@ void init_Main_Motor(void) {
     //-- TB1 reg 1 timer setup
     TB1CCR0 = UPPER_COUNT - 1;
     TB1CCR1 = MID_COUNT;
-    TB1CCTL1 |= OUTMOD_2;           // Toggle set mode
+    TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
     TB1CTL |= TBSSEL_2;             // SMCLK 1 Mhz
 
+    //-- Enable port that is connected to input 4 on the motor controller
+    P1DIR |= ON_MOTOR;
+    P1OUT &= ~ON_MOTOR;
 }
 
 int incrementMainMotor(int direction, int increment) {
@@ -54,10 +59,15 @@ int incrementMainMotor(int direction, int increment) {
         return -1;  // Action not completed
     }
 
+    //-- Enable motor through motor controller
+    P1OUT |= ON_MOTOR;
+
     motor_increment = increment;
 
-    TB1CTL |= TBCLR; // Clear timer count
-    TB1CTL |= MC_1;   //-- Count up mode
+    TB1CTL |= TBCLR;                // Clear timer count
+    TB1CTL |= MC_1;                 // Count up mode
+    TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
+    motor_state = ON;
 
     TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
 
@@ -88,7 +98,7 @@ int setMainMotorPosition(int position) {
         //-- Position Reached
         return -3;
     } else {
-        direction = voltage < setpoint ? CLOCKWISE : ANTICLOCKWISE;
+        direction = voltage < setpoint ? ANTICLOCKWISE : CLOCKWISE;
     }
 
     //-- Set DIR pin
@@ -105,8 +115,13 @@ int setMainMotorPosition(int position) {
         return -4;  // Action not completed
     }
 
-    TB1CTL |= TBCLR; // Clear timer count
-    TB1CTL |= MC_1;   //-- Count up mode
+    //-- Enable motor through motor controller
+    P1OUT |= ON_MOTOR;
+
+    TB1CTL |= TBCLR;                // Clear timer count
+    TB1CTL |= MC_1;                 // Count up mode
+    TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
+    motor_state = ON;
 
     /*
      * Receive potentiometer voltage. Stop motor when setpoint reached
@@ -116,7 +131,7 @@ int setMainMotorPosition(int position) {
         err = receive_potentiometer(&voltage);
         if (err < 0) return -2;
 
-        if (direction == CLOCKWISE && voltage > setpoint || direction == ANTICLOCKWISE && voltage < setpoint) {
+        if (direction == CLOCKWISE && voltage < setpoint || direction == ANTICLOCKWISE && voltage > setpoint) {
             //-- Toggle the DIR pin
             P2OUT ^= DIR;
 
@@ -127,7 +142,7 @@ int setMainMotorPosition(int position) {
         }
 
         __delay_cycles(1000); // 1kHz freq
-    }while (voltage == setpoint);
+    }while (voltage != setpoint);
 
     stopMainMotor();
 
@@ -135,8 +150,17 @@ int setMainMotorPosition(int position) {
 }
 
 void stopMainMotor(void) {
-    TB1CTL &= ~MC_1;    // Hault PWM timer
-    TB1CTL |= TBCLR;    // Clear timer count
+    TB1CTL &= ~MC_1;        // Hault PWM timer
+    TB1CTL |= TBCLR;        // Clear timer count
+    P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
+
+    TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode
+    TB1CCTL1 &= ~OUT;        // Force output to zero
+    motor_state = OFF;
+}
+
+int isMotorOn(void) {
+    return motor_state;
 }
 
 

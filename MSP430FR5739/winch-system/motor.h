@@ -15,14 +15,17 @@
 //-- Port P1.0
 #define ON_MOTOR BIT0
 
+#define OFF 0
+#define ON 1
+
 //-- Direction definitions
 #define REST 0
 #define CLOCKWISE 1
 #define ANTICLOCKWISE 2
 
 //-- Counts - 176 Hz PWM
-#define UPPER_COUNT 5682
-#define MID_COUNT 2841
+#define UPPER_COUNT 22727
+#define MID_COUNT 11364
 
 #define POT_SCALAR 11
 #define MAX_MOTOR_TRIES 3
@@ -38,6 +41,8 @@ int setMainMotorPosition(int position);
 int incrementMainMotor(int direction, int increment);
 
 //-- Haults motor operation
-void stopMainMotor();
+void stopMainMotor(void);
+
+int isMotorOn(void);
 
 #endif /* MOTOR_H_ */
