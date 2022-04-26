@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "uart.h"
 #include "motor.h"
+#include "statemachine.h"
 
 
 void init(void);
@@ -17,23 +18,10 @@ int main(void)
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
 	init();
 	V_PRINTF("MAIN\r\n");
-	int err = 0;
-	int position = 130;
-
-	char command[2] = "";
-
-	move_pawl(REST);
-	__delay_cycles(1000000);
-	move_pawl(CLOCKWISE);
 
 	while (1) {
 
-
-	    //-- 5000 ms
-	    __delay_cycles(5000000);
 	}
-
-	return 0;
 }
 
 void init(void) {

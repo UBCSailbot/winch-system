@@ -6,7 +6,7 @@ SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CMD_SRCS += \
-../lnk_msp430fr5739.cmd 
+../msp430fr5739.cmd 
 
 C_SRCS += \
 ../debug.c \
@@ -15,6 +15,7 @@ C_SRCS += \
 ../motor.c \
 ../pawl.c \
 ../spi.c \
+../statemachine.c \
 ../uart.c 
 
 C_DEPS += \
@@ -24,6 +25,7 @@ C_DEPS += \
 ./motor.d \
 ./pawl.d \
 ./spi.d \
+./statemachine.d \
 ./uart.d 
 
 OBJS += \
@@ -33,6 +35,7 @@ OBJS += \
 ./motor.obj \
 ./pawl.obj \
 ./spi.obj \
+./statemachine.obj \
 ./uart.obj 
 
 OBJS__QUOTED += \
@@ -42,6 +45,7 @@ OBJS__QUOTED += \
 "motor.obj" \
 "pawl.obj" \
 "spi.obj" \
+"statemachine.obj" \
 "uart.obj" 
 
 C_DEPS__QUOTED += \
@@ -51,6 +55,7 @@ C_DEPS__QUOTED += \
 "motor.d" \
 "pawl.d" \
 "spi.d" \
+"statemachine.d" \
 "uart.d" 
 
 C_SRCS__QUOTED += \
@@ -60,6 +65,7 @@ C_SRCS__QUOTED += \
 "../motor.c" \
 "../pawl.c" \
 "../spi.c" \
+"../statemachine.c" \
 "../uart.c" 
 
 
