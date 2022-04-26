@@ -10,6 +10,8 @@
 #include "gearmotor.h"
 #include "pawl.h"
 #include "spi.h"
+#include "motor.h"
+#include "debug.h"
 
 
 /**
@@ -28,9 +30,9 @@
  *
  * Return: 0 when success and -1 otherwise
  */
-int move_pawl(void) {
+int move_pawl(int direction) {
     int err = 0;
-    switch(cur_direction) {
+    switch(direction) {
     case CLOCKWISE:
         err = disengageLeft();
         break;
@@ -52,7 +54,6 @@ int move_pawl(void) {
  */
 static int disengageRight(void) {
     int pawl_right;
-    int motor_increment = 0;
     int tries = 0;
     int spi_tries = 0;
 
@@ -67,13 +68,16 @@ static int disengageRight(void) {
     }
 
     do {
-        if (++tries > MAX_TRIES) return -3;
+        if (tries > MAX_TRIES) return -3;
+
+        if (tries != 0) incrementMainMotor(CLOCKWISE, 5);
 
         startGearMotor(1, MEDIUM, 100);
 
-        // TODO: moveMainMotor(/*direction*/, motor_increment);
+        while (isGearMotorOn());
 
-        while (GearMotorOn);
+        //--1ms
+        __delay_cycles(1000);
 
         do{
             receive_hallsensors(NULL, NULL, &pawl_right);
@@ -82,7 +86,10 @@ static int disengageRight(void) {
 
         spi_tries = 0;
 
-        motor_increment++;
+        tries++;
+
+        V_PRINTF("Pawl_right: %d\r\n", pawl_right);
+
     } while (pawl_right > RIGHT_THRES);
 
 
@@ -91,7 +98,6 @@ static int disengageRight(void) {
 
 static int disengageLeft(void) {
     int pawl_left;
-    int motor_increment = 0;
     int tries = 0;
     int spi_tries = 0;
 
@@ -106,14 +112,19 @@ static int disengageLeft(void) {
     }
 
     do {
-        if (++tries > MAX_TRIES) return -3;
+        if (tries > MAX_TRIES) return -3;
+
+        if (tries != 0) incrementMainMotor(ANTICLOCKWISE, 5);
 
         //-- Backward - Medium speed
         startGearMotor(0, MEDIUM, 100);
 
         // TODO: moveMainMotor(/*direction*/, motor_increment);
 
-        while (GearMotorOn);
+        while (isGearMotorOn());
+
+        //--1000ms
+        __delay_cycles(1000);
 
         do{
             receive_hallsensors(&pawl_left, NULL, NULL);
@@ -122,7 +133,9 @@ static int disengageLeft(void) {
 
         spi_tries = 0;
 
-        motor_increment++;
+        tries++;
+        V_PRINTF("Pawl_left: %d\r\n", pawl_left);
+
     } while (pawl_left > LEFT_THRES);
 
 
@@ -156,7 +169,7 @@ static int disengageBoth(void) {
         }
 
         //-- Wait until gear motor stops
-        while (GearMotorOn);
+        while (isGearMotorOn());
 
         do{
             receive_hallsensors(NULL, &cam, NULL);
@@ -170,6 +183,7 @@ static int disengageBoth(void) {
         if (++tries > MAX_TRIES) return -3;
 
         timeout -= 5;
+
     } while (cam > CAM_THRES_UPPER || cam < CAM_THRES_LOWER);
 
     return 0;

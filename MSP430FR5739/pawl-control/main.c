@@ -3,9 +3,7 @@
 #include "spi.h"
 #include "gearmotor.h"
 #include "debug.h"
-
-#define VERBOSE 1
-#define V_PRINT(str) while(VERBOSE) {putString(str); break;}
+#include "motor.h"
 
 int cur_direction = -1;
 int rx_ready = 0;
@@ -21,6 +19,8 @@ int main(void)
 	
 	init();
 
+	 V_PRINTF("READY\r\n");
+
 	while(1) {
 	    while(rx_ready) {
 	        switch(control_char) {
@@ -35,14 +35,16 @@ int main(void)
 	            break;
 	        }
 
-	        if (move_pawl() == 0) {
-	                V_PRINT("SUCCESS\r\n");
+	        if (move_pawl(cur_direction) == 0) {
+	                V_PRINTF("\r\nSUCCESS\r\n");
 	            }else {
-	                V_PRINT("FAIL\r\n");
+	                V_PRINTF("\r\nFAIL\r\n");
 	        }
 
 	        rx_ready = 0;
 	    }
+
+	    __delay_cycles(1000);
 	}
 }
 
@@ -51,6 +53,7 @@ void init(void) {
     init_spi();
     init_gearmotor();
     init_UART_DBG();
+    init_Main_Motor();
 
     __enable_interrupt();
 }

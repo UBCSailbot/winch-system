@@ -57,14 +57,5 @@ dkms.conf
 dvt/
 .tempFiles/
 RemoteSystemsTempFiles/
-lnk_*
-.settings/
-Debug/
-targetConfigs/
 
-*.ccsproject
-*.cproject
-*.ccxml
-
-**.launches/
 

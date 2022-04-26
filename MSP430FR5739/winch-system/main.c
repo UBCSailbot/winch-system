@@ -18,18 +18,19 @@ int main(void)
 	init();
 	V_PRINTF("MAIN\r\n");
 	int err = 0;
+	int position = 130;
 
 	char command[2] = "";
-	while (1) {
-	    if (isReady()) {
-	        getCommand(command);
-	        err = setMainMotorPosition((int) command[0]);
-	        V_PRINTF("ERROR: %d\r\n", err);
-	        clearReady();
-	    }
 
-	    //-- 10 ms
-	    __delay_cycles(10000);
+	move_pawl(REST);
+	__delay_cycles(1000000);
+	move_pawl(CLOCKWISE);
+
+	while (1) {
+
+
+	    //-- 5000 ms
+	    __delay_cycles(5000000);
 	}
 
 	return 0;

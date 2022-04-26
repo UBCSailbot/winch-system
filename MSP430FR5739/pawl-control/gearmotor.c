@@ -8,7 +8,7 @@
 #include "gearmotor.h"
 
 //-- State of gearmotor
-int GearMotorOn = 0;
+volatile int GearMotorOn = 0;
 
 void init_gearmotor(void) {
 
@@ -101,6 +101,10 @@ void stopGearMotor(void) {
     TA1CCTL0 &= ~CCIE;
 
     TA1CTL |= TACLR;
+}
+
+int isGearMotorOn(void) {
+    return GearMotorOn;
 }
 
 #pragma vector = TIMER1_A0_VECTOR;

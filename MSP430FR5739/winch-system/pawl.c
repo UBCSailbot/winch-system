@@ -10,6 +10,7 @@
 #include "gearmotor.h"
 #include "pawl.h"
 #include "spi.h"
+#include "motor.h"
 
 
 /**
@@ -52,7 +53,6 @@ int move_pawl(int direction) {
  */
 static int disengageRight(void) {
     int pawl_right;
-    int motor_increment = 0;
     int tries = 0;
     int spi_tries = 0;
 
@@ -67,11 +67,11 @@ static int disengageRight(void) {
     }
 
     do {
-        if (++tries > MAX_TRIES) return -3;
+        if (tries > MAX_TRIES) return -3;
+
+        if (tries != 0) incrementMainMotor(CLOCKWISE, 5);
 
         startGearMotor(1, MEDIUM, 100);
-
-        // TODO: moveMainMotor(/*direction*/, motor_increment);
 
         while (isGearMotorOn());
 
@@ -82,7 +82,8 @@ static int disengageRight(void) {
 
         spi_tries = 0;
 
-        motor_increment++;
+        tries++;
+
     } while (pawl_right > RIGHT_THRES);
 
 
@@ -91,7 +92,6 @@ static int disengageRight(void) {
 
 static int disengageLeft(void) {
     int pawl_left;
-    int motor_increment = 0;
     int tries = 0;
     int spi_tries = 0;
 
@@ -106,7 +106,9 @@ static int disengageLeft(void) {
     }
 
     do {
-        if (++tries > MAX_TRIES) return -3;
+        if (tries > MAX_TRIES) return -3;
+
+        if (tries != 0) incrementMainMotor(ANTICLOCKWISE, 5);
 
         //-- Backward - Medium speed
         startGearMotor(0, MEDIUM, 100);
@@ -122,7 +124,7 @@ static int disengageLeft(void) {
 
         spi_tries = 0;
 
-        motor_increment++;
+        tries++;
     } while (pawl_left > LEFT_THRES);
 
 

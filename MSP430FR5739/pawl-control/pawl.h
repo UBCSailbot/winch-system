@@ -21,11 +21,9 @@
 
 #define MAX_TRIES 3
 
-extern int cur_direction;
-extern int GearMotorOn;
 
 //-- Move the main pawls depending on the cur_direction
-int move_pawl(void);
+int move_pawl(int direction);
 
 //-- Disengages right pawl by controlling gear motor
 static int disengageRight(void);

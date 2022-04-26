@@ -99,10 +99,23 @@ void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
 
 /*
  * Allows to receive Potentiometer data
+ * Return -1 if voltage not in the range 500mV to 4500mV
  */
+int receive_potentiometer(unsigned int* pot_data) {
+    int tries = 0;
 
-void receive_potentiometer(unsigned int* pot_data) {
-    *pot_data = spi_io(0x55, 2, CS_POT);
+    do {
+        P3OUT &= ~CS_POT;
+        *pot_data = spi_io(0x55, 2, CS_POT);
+        P3OUT |= CS_POT;
+        V_PRINTF("POT data: %d \r\n", *pot_data);
+
+        if (++tries > MAX_POT_TRIES) return -1;
+
+    } while (*pot_data < 500 || *pot_data > 4500);
+
+
+    return 0;
 }
 
 
@@ -151,6 +164,7 @@ static int spi_io(int data, int bytes, int chipSel) {
     int rx_data = 0;
     int tmp;
     int i = 1;
+
 
     //P3OUT &= ~chipSel;
 

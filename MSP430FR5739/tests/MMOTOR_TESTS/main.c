@@ -72,7 +72,7 @@ void test_mainMotorIncrement(void) {
 
 void test_mainMotorPosition(void) {
     V_PRINTF("TEST main motor position \r\n");
-    int err = setMainMotorPosition(205);
+    int err = setMainMotorPosition(170);
 
     __delay_cycles(1000000);
 

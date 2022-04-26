@@ -1,12 +1,8 @@
-/*
- * gearmotor.c
- *
- *  Created on: Apr. 4, 2022
- *      Author: mlokh
- */
 #include <msp430.h>
 #include "gearmotor.h"
 
+//-- State of gearmotor
+volatile int GearMotorOn = 0;
 
 void init_gearmotor(void) {
 
@@ -43,7 +39,7 @@ void init_gearmotor(void) {
 
 
     TB0CCR0 = D_PWM_UPPERC; //-- Timer_B Main timer 700Hz
-    TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset TODO: test this set OUTMODE to the wrong reg
+    TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset
     TB0CTL |= TBSSEL_2;     //-- Clock SMCLK (1 Mhz)
 
 
@@ -101,6 +97,10 @@ void stopGearMotor(void) {
     TA1CTL |= TACLR;
 }
 
+int isGearMotorOn(void) {
+    return GearMotorOn;
+}
+
 #pragma vector = TIMER1_A0_VECTOR;
 __interrupt void TIMER1_A0_ISR (void) {
 
@@ -109,4 +109,3 @@ __interrupt void TIMER1_A0_ISR (void) {
 
     stopGearMotor();
 }
-

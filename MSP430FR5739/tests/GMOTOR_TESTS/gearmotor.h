@@ -17,7 +17,7 @@
 //-- Port 1
 #define ENABLE BIT4
 
-#define CLKFREQ 32000
+#define CLKFREQ 32768
 
 //-- Defaults
 #define D_TIMEOUTC  32768   /* 1s default timeout */
@@ -26,10 +26,7 @@
 //-- Motor Speed
 #define FAST    143        /* 90% duty */
 #define MEDIUM  719      /* 50% duty */
-#define SLOW    1150        /* 20% duty */
-
-//-- Gear motor state
-extern int GearMotorOn;
+#define SLOW    1007        /* 30% duty */
 
 //-- Initializes the gear motor - PWM and timeout
 void init_gearmotor(void);
@@ -40,7 +37,8 @@ void startGearMotor(int forward, int speed, int timeout);
 //-- Stops the gear motor from moving
 void stopGearMotor(void);
 
-
+//-- Returns the state of the motor
+int isGearMotorOn(void);
 
 
 #endif /* GEARMOTOR_H_ */

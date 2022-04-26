@@ -64,6 +64,8 @@ void init_spi(void) {
 void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
 
     if (pawl_left != NULL) {
+        //-- Delay 10 ms
+        __delay_cycles(10000);
         if (configHall(AIN0_CONF) < 0) {
             *pawl_left = -1;
         } else {
@@ -75,6 +77,8 @@ void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
     }
 
     if (cam != NULL) {
+        //-- Delay 10 ms
+        __delay_cycles(10000);
         if (configHall(AIN1_CONF) < 0) {
             *cam = -1;
         } else {
@@ -86,6 +90,8 @@ void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
      }
 
     if (pawl_right != NULL) {
+        //-- Delay 10 ms
+        __delay_cycles(10000);
         if (configHall(AIN2_CONF) < 0) {
             *pawl_right = -1;
         } else {
