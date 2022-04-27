@@ -18,7 +18,7 @@ ORDERED_OBJS += \
 "./spi.obj" \
 "./statemachine.obj" \
 "./uart.obj" \
-"../msp430fr5739.cmd" \
+"../lnk_msp430fr5739.cmd" \
 $(GEN_CMDS__FLAG) \
 -llibmpu_init_fr57xx.a \
 -llibmath.a \

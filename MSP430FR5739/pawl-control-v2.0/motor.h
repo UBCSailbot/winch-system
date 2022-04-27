@@ -23,12 +23,16 @@
 #define CLOCKWISE 1
 #define ANTICLOCKWISE 2
 
-//-- Counts - 88 Hz PWM
-#define UPPER_COUNT 11364
-#define MID_COUNT 5682
+//-- Counts - 176 Hz PWM
+//#define UPPER_COUNT 5682
+//#define MID_COUNT 2841
+
+//-- 44 Hz PWM
+#define UPPER_COUNT 22727
+#define MID_COUNT 11364
 
 #define POT_SCALAR 11
-#define MAX_MOTOR_TRIES 3
+#define MAX_MOTOR_TRIES 2
 
 
 //-- Initializes main motor functionality and interrupts
@@ -40,12 +44,9 @@ int setMainMotorPosition(int position);
 //-- Increment motor by a certain amount
 int incrementMainMotor(int direction, int increment);
 
-//-- Hault motor operation
+//-- Haults motor operation
 void stopMainMotor(void);
 
 int isMotorOn(void);
-
-// Returns negative if error otherwise position between 0-360
-unsigned int getCurrentPosition(void);
 
 #endif /* MOTOR_H_ */

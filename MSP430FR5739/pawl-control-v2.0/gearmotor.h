@@ -37,7 +37,8 @@ void startGearMotor(int forward, int speed, int timeout);
 //-- Stops the gear motor from moving
 void stopGearMotor(void);
 
-
+//-- Returns the state of the motor
+int isGearMotorOn(void);
 
 
 #endif /* GEARMOTOR_H_ */

@@ -19,6 +19,9 @@
 //-- Init uart
 void init_uart(void);
 
+//-- Sends formated string to the UCCM
+void uccm_send(const char *format, ...);
+
 //-- Sends string to uart, to communicate with UCCM or debug
 void putString(char* message);
 
@@ -29,7 +32,7 @@ int isReady(void);
 void clearReady(void);
 
 //-- Receive command from rxbuffer
-void getCommand(char* command);
+void getMsg(char* msg);
 
 
 

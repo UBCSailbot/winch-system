@@ -1,5 +1,7 @@
 #include <msp430.h>
 #include "debug.h"
+#include <stdio.h>
+#include <stdarg.h>
 
 /*
  * debug.c
@@ -10,6 +12,19 @@
 
 extern int rx_ready;
 char control_char = 0;
+
+void dbg_printf(const char *format, ...) {
+    va_list args;
+    char str[50] = "";
+
+    va_start(args, format);
+
+    vsprintf(str, format, args);
+
+    putString(str);
+
+    va_end(args);
+}
 
 void init_UART_DBG(void) {
     UCA1CTLW0 |= UCSWRST + UCSSEL__SMCLK;   // Initially set UART A1 to reset and select SMCLK 1Mhz clk

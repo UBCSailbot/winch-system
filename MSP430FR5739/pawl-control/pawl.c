@@ -76,8 +76,8 @@ static int disengageRight(void) {
 
         while (isGearMotorOn());
 
-        //--1ms
-        __delay_cycles(1000);
+        //--100ms
+        __delay_cycles(100000);
 
         do{
             receive_hallsensors(NULL, NULL, &pawl_right);
@@ -123,8 +123,8 @@ static int disengageLeft(void) {
 
         while (isGearMotorOn());
 
-        //--1000ms
-        __delay_cycles(1000);
+        //--100ms
+        __delay_cycles(100000);
 
         do{
             receive_hallsensors(&pawl_left, NULL, NULL);

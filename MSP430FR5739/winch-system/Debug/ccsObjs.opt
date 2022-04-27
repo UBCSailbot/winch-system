@@ -1,1 +1,1 @@
-"./debug.obj" "./gearmotor.obj" "./main.obj" "./motor.obj" "./pawl.obj" "./spi.obj" "./statemachine.obj" "./uart.obj" "../msp430fr5739.cmd" -llibmpu_init_fr57xx.a -llibmath.a -llibc.a 
+"./debug.obj" "./gearmotor.obj" "./main.obj" "./motor.obj" "./pawl.obj" "./spi.obj" "./statemachine.obj" "./uart.obj" "../lnk_msp430fr5739.cmd" -llibmpu_init_fr57xx.a -llibmath.a -llibc.a 

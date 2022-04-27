@@ -163,6 +163,16 @@ int isMotorOn(void) {
     return motor_state;
 }
 
+unsigned int getCurrentPosition(void) {
+    unsigned int voltage;
+    int err;
+
+    err = receive_potentiometer(&voltage);
+    if (err) return err;
+
+    return (unsigned int) (voltage - 500)/POT_SCALAR;
+}
+
 
 #pragma vector = TIMER1_B0_VECTOR;
 __interrupt void TIMER1_B0_ISR (void) {

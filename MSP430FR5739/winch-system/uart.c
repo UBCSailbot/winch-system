@@ -7,13 +7,15 @@
 #include <msp430.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
 #include "uart.h"
 
 
-static int rx_flag = 0;
+static volatile int rx_flag = 0;
 char rxbuf[RXBUF_LEN] = "";
 size_t bufpos = 0;
-size_t state  = READ;
+static size_t state  = READ;
 
 
 void init_uart(void) {
@@ -43,8 +45,21 @@ void clearReady(void) {
     rx_flag = 0;
 }
 
-void getCommand(char* command) {
-    strcpy(command, rxbuf);
+void getMsg(char* msg) {
+    strcpy(msg, rxbuf);
+}
+
+void uccm_send(const char *format, ...) {
+    va_list args;
+    char str[50] = "";
+
+    va_start(args, format);
+
+    vsprintf(str, format, args);
+
+    putString(str);
+
+    va_end(args);
 }
 
 void putString(char* message) {

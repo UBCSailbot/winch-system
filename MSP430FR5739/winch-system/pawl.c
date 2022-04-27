@@ -12,6 +12,8 @@
 #include "spi.h"
 #include "motor.h"
 
+unsigned int motor_inc_tries = 0;
+unsigned int dir = 0;
 
 /**
  * Set the state of the paws to either engaged or disengaged
@@ -27,19 +29,19 @@
  *        Depending on which Paw is engaged we move to the opposite direction (to disengage the pawl).
  *        The center is determined by CAM hall sensor data
  *
- * Return: 0 when success and -1 otherwise
+ * Return: negative when error, 0 when success and 1 when pawl position reached
  */
-int move_pawl(int direction) {
+int move_pawl(unsigned int direction, unsigned int phase) {
     int err = 0;
     switch(direction) {
     case CLOCKWISE:
-        err = disengageLeft();
+        err = disengageLeft(phase);
         break;
     case ANTICLOCKWISE:
-        err = disengageRight();
+        err = disengageRight(phase);
         break;
     case REST:
-        err = disengageBoth();
+        err = disengageBoth(phase);
         break;
 
     }
@@ -51,29 +53,36 @@ int move_pawl(int direction) {
 /**
  * Functions to control pawl movement
  */
-static int disengageRight(void) {
+static int disengageRight(unsigned int phase) {
     int pawl_right;
-    int tries = 0;
     int spi_tries = 0;
 
-    receive_hallsensors(NULL, NULL, &pawl_right);
+    if (phase == INIT_PAWL) {
+        receive_hallsensors(NULL, NULL, &pawl_right);
 
-    //-- Error checking to see if we could receive pawl_right data
-    if (pawl_right < 0) return -1;
+        //-- Error checking to see if we could receive pawl_right data
+        if (pawl_right < 0) return -1;
 
-    if (pawl_right <= RIGHT_THRES) {
-        //-- Already disengaged (Why?)
-        return -2;
-    }
+        if (pawl_right <= RIGHT_THRES) {
+            //-- Already disengaged (Why?)
+            return -2;
+        }
 
-    do {
-        if (tries > MAX_TRIES) return -3;
+        motor_inc_tries = 0;
 
-        if (tries != 0) incrementMainMotor(CLOCKWISE, 5);
-
+        //-- Start the gear motor for TODO: figure out how long
         startGearMotor(1, MEDIUM, 100);
 
-        while (isGearMotorOn());
+    } else {    //-- RUN_PAWL
+        if (!isGearMotorOn()) {
+            //-- If gear motor has timed out
+            if (++motor_inc_tries > MAX_TRIES) return -3;
+
+            incrementMainMotor(CLOCKWISE, 5);
+
+            //-- Start gear motor again
+            startGearMotor(1, MEDIUM, 100);
+        }
 
         do{
             receive_hallsensors(NULL, NULL, &pawl_right);
@@ -82,40 +91,44 @@ static int disengageRight(void) {
 
         spi_tries = 0;
 
-        tries++;
-
-    } while (pawl_right > RIGHT_THRES);
-
+        if (pawl_right <= RIGHT_THRES) {
+            stopGearMotor();
+            return 1;
+        }
+    }
 
     return 0;
 }
 
-static int disengageLeft(void) {
+static int disengageLeft(unsigned int phase) {
     int pawl_left;
-    int tries = 0;
     int spi_tries = 0;
 
-    receive_hallsensors(&pawl_left, NULL, NULL);
+    if (phase == INIT_PAWL) {
+        receive_hallsensors(&pawl_left, NULL, NULL);
 
-    //-- Error checking to see if we could receive pawl_right data
-    if (pawl_left < 0) return -1;
+        //-- Error checking to see if we could receive pawl_right data
+        if (pawl_left < 0) return -1;
 
-    if (pawl_left <= LEFT_THRES) {
-        //-- Already disengaged (Why?)
-        return -2;
-    }
+        if (pawl_left <= LEFT_THRES) {
+            //-- Already disengaged (Why?)
+            return -2;
+        }
 
-    do {
-        if (tries > MAX_TRIES) return -3;
+        motor_inc_tries = 0;
 
-        if (tries != 0) incrementMainMotor(ANTICLOCKWISE, 5);
-
-        //-- Backward - Medium speed
+        //-- Start the gear motor for TODO: figure out how long
         startGearMotor(0, MEDIUM, 100);
+    } else {    //-- RUN_PAWL
+        if (!isGearMotorOn()) {
+            //-- If gear motor has timed out
+            if (++motor_inc_tries > MAX_TRIES) return -3;
 
-        // TODO: moveMainMotor(/*direction*/, motor_increment);
+            incrementMainMotor(ANTICLOCKWISE, 5);
 
-        while (isGearMotorOn());
+            //-- Start gear motor again
+            startGearMotor(0, MEDIUM, 100);
+        }
 
         do{
             receive_hallsensors(&pawl_left, NULL, NULL);
@@ -124,41 +137,64 @@ static int disengageLeft(void) {
 
         spi_tries = 0;
 
-        tries++;
-    } while (pawl_left > LEFT_THRES);
-
+        if (pawl_left <= LEFT_THRES) {
+            stopGearMotor();
+            return 1;
+        }
+    }
 
     return 0;
 }
 
-static int disengageBoth(void) {
+static int disengageBoth(unsigned int phase) {
     int cam;
-    int tries = 0;
-    int timeout = 50;
-    const int offset = 14781;
     int spi_tries = 0;
 
-    receive_hallsensors(NULL, &cam, NULL);
+    if (phase == INIT_PAWL) {
 
-    if (cam < 0) return -1;
+        //-- set direction to backward
+        dir = BACKWARD;
 
-    cam -= offset;
+        receive_hallsensors(NULL, &cam, NULL);
 
-    if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
-        //-- Already disengaged (Why?)
-        return -2;
-    }
+        if (cam < 0) return -1;
 
-    do {
-        if (cam > 0) {
-            //-- Move gear motor backward
-            startGearMotor(0, SLOW, timeout);
-        } else {
-            startGearMotor(1, SLOW, timeout);
+        cam -= CAM_OFFSET;
+
+        if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
+            //-- Already disengaged (Why?)
+            return -2;
         }
 
-        //-- Wait until gear motor stops
-        while (isGearMotorOn());
+        if (cam > 0) {
+            //-- Go backward
+            dir = BACKWARD;
+        } else {
+            //-- Go forward
+            dir = FORWARD;
+        }
+
+        motor_inc_tries = 0;
+
+        startGearMotor(dir, SLOW, CAM_TIMEOUT);
+
+    } else {    //-- RUN_PAWL
+        if (!isGearMotorOn()) {
+            if (++motor_inc_tries > MAX_TRIES) return -3;
+
+            startGearMotor(dir, SLOW, CAM_TIMEOUT);
+        }
+
+        //-- If cam value is positive and dir is forward. Reverse
+        if (cam > 0 && dir || cam < 0 && !dir) {
+            stopGearMotor();
+
+            //-- toggle direction
+            dir ^= FORWARD;
+
+            //-- Reverse gear motor
+            startGearMotor(dir, SLOW, CAM_TIMEOUT);
+        }
 
         do{
             receive_hallsensors(NULL, &cam, NULL);
@@ -167,12 +203,13 @@ static int disengageBoth(void) {
 
         spi_tries = 0;
 
-        cam -= offset;
+        cam -= CAM_OFFSET;
 
-        if (++tries > MAX_TRIES) return -3;
-
-        timeout -= 5;
-    } while (cam > CAM_THRES_UPPER || cam < CAM_THRES_LOWER);
+        if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
+            stopGearMotor();
+            return 1;
+        }
+    }
 
     return 0;
 }

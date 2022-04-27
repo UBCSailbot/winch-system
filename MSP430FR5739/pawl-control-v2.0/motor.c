@@ -10,8 +10,6 @@
 
 int motor_increment;
 volatile int motor_state;
-unsigned int direction;
-unsigned int motor_tries = 0;
 
 
 /**
@@ -46,15 +44,15 @@ void init_Main_Motor(void) {
     P1OUT &= ~ON_MOTOR;
 }
 
-int incrementMainMotor(int dir, int increment) {
-    //-- Set DIR pin
-    switch(dir) {
+int incrementMainMotor(int direction, int increment) {
+    //-- Set DIR pin Clockwise 0 Anticlockwise 1
+    switch(direction) {
     case CLOCKWISE:
-        P2OUT |= DIR;
+        P2OUT &= ~DIR;
         break;
 
     case ANTICLOCKWISE:
-        P2OUT &= ~DIR;
+        P2OUT |= DIR;
         break;
 
     default:
@@ -79,69 +77,74 @@ int incrementMainMotor(int dir, int increment) {
  * Rotates the main motor in the direction indicated by the
  * global state
  *
- * Returns -1 when error and 0 when success and 1 if motor has reached setpoint
+ * Returns -1 when error and 0 otherwise
  */
-int setMainMotorPosition(unsigned int position, unsigned int dir, unsigned int phase) {
-
+int setMainMotorPosition(int position) {
+    int direction;
     unsigned int voltage;
     int err;
-    unsigned int setpoint;
+    int setpoint;
+    int tries = 0;
 
-    if (phase == INIT_MMOTOR) {
-        setpoint = (position * POT_SCALAR) + 500;
+    setpoint = (position * POT_SCALAR) + 500;
 
-        if (position > 360) return -1;
+    if (position > 360 || position < 0) return -1;
 
-        direction = dir;
+    //-- Receive Pot voltage and determine the direction
+    err = receive_potentiometer(&voltage);
+    if (err < 0) return -2;
 
-        //-- Set DIR pin
-        switch(direction) {
-        case CLOCKWISE:
-            P2OUT |= DIR;
-            break;
+    if (voltage == setpoint) {
+        //-- Position Reached
+        return -3;
+    } else {
+        direction = voltage < setpoint ? CLOCKWISE : ANTICLOCKWISE;
+    }
 
-        case ANTICLOCKWISE:
-            P2OUT &= ~DIR;
-            break;
+    //-- Set DIR pin Clockwise 0 Anticlockwise 1
+    switch(direction) {
+    case CLOCKWISE:
+        P2OUT &= ~DIR;
+        break;
 
-        case REST:
-            //-- Already at position
-            return 1;
+    case ANTICLOCKWISE:
+        P2OUT |= DIR;
+        break;
 
-        default:
-            return -4;  // Action not completed
-        }
+    default:
+        return -4;  // Action not completed
+    }
 
-        //-- Init the tries to 0
-        motor_tries = 0;
+    //-- Enable motor through motor controller
+    P1OUT |= ON_MOTOR;
 
-        //-- Enable motor through motor controller
-        P1OUT |= ON_MOTOR;
+    TB1CTL |= TBCLR;                // Clear timer count
+    TB1CTL |= MC_1;                 // Count up mode
+    TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
+    motor_state = ON;
 
-        TB1CTL |= TBCLR;                // Clear timer count
-        TB1CTL |= MC_1;                 // Count up mode
-        TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
-        motor_state = ON;
-    } else {    // PHASE == RUN_MMOTOR
-
+    /*
+     * Receive potentiometer voltage. Stop motor when setpoint reached
+     * Get data at 1kHz frequency
+     */
+    do {
         err = receive_potentiometer(&voltage);
         if (err < 0) return -2;
 
-        if (direction == CLOCKWISE && voltage < setpoint || direction == ANTICLOCKWISE && voltage > setpoint) {
+        if (direction == CLOCKWISE && voltage > setpoint || direction == ANTICLOCKWISE && voltage < setpoint) {
             //-- Toggle the DIR pin
             P2OUT ^= DIR;
 
             //-- Toggle the direction
             direction ^= CLOCKWISE ^ ANTICLOCKWISE;
 
-            if (++motor_tries > MAX_MOTOR_TRIES) return -5;
+            if (++tries > MAX_MOTOR_TRIES) return -5;
         }
 
-        if (voltage == setpoint) {
-            stopMainMotor();
-            return 1;
-        }
-    }
+        __delay_cycles(1000); // 1kHz freq
+    }while (voltage != setpoint);
+
+    stopMainMotor();
 
     return 0;
 }
@@ -158,34 +161,6 @@ void stopMainMotor(void) {
 
 int isMotorOn(void) {
     return motor_state;
-}
-
-unsigned int getCurrentPosition(void) {
-    unsigned int voltage;
-    int err;
-
-    err = receive_potentiometer(&voltage);
-    if (err) return err;
-
-    return (unsigned int) (voltage - 500)/POT_SCALAR;
-}
-
-unsigned int getDirection(unsigned int position) {
-    unsigned int voltage;
-    int err;
-    unsigned int setpoint;
-
-    setpoint = (position * POT_SCALAR) + 500;
-
-    err = receive_potentiometer(&voltage);
-    if (err) return err;
-
-    if (voltage == setpoint) {
-        //-- Position Reached
-        return REST;
-    } else {
-        return voltage < setpoint ? ANTICLOCKWISE : CLOCKWISE;
-    }
 }
 
 

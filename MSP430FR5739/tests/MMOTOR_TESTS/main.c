@@ -7,13 +7,15 @@
 //-- Types of tests
 #define MOVE_MOTOR 1
 #define MOTOR_POS  2
+#define GET_POS    3
 
 //-- CONTROL
-#define TEST_SEL MOTOR_POS
-#define INCREMENT 11
+#define TEST_SEL GET_POS
+#define INCREMENT 5
 
 void test_mainMotorIncrement(void);
 void test_mainMotorPosition(void);
+void test_getCurrentPosition(void);
 
 /**
  * main.c
@@ -36,6 +38,9 @@ int main(void)
 	    break;
 	case MOTOR_POS:
 	    test_mainMotorPosition();
+	    break;
+	case GET_POS:
+	    test_getCurrentPosition();
 	    break;
 	}
 
@@ -87,6 +92,15 @@ void test_mainMotorPosition(void) {
     V_PRINTF("ERROR: %d", err);
 }
 
+void test_getCurrentPosition(void) {
+    while (1) {
+        V_PRINTF("Current Position: %d\r\n", getCurrentPosition());
+
+        //-- delay one sec
+        __delay_cycles(1000000);
+    }
+
+}
 
 
 
