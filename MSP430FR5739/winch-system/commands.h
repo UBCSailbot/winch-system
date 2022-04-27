@@ -13,7 +13,7 @@
 
 #define ACTIVE_CMD_SIZE 4
 
-//-- command ids
+//-- command types
 #define SET_POS         1
 #define QUERY_POS       2
 #define STOPLOCK        4
@@ -36,7 +36,7 @@ static int cmd_index = 0;
 static t_cmd cmd_list[ACTIVE_CMD_SIZE];
 
 
-//-- Creates a new command
+//-- Creates a new command. If the command is busy we set the type to be ACTION_BUSY instead
 t_cmd * new_command(int cmd, unsigned int data1, unsigned int data2, unsigned int uccm_msg);
 
 //-- Removes current command from the list
