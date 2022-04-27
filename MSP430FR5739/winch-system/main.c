@@ -19,9 +19,8 @@ int main(void)
 	init();
 	V_PRINTF("MAIN\r\n");
 
-	while (1) {
-
-	}
+	handle_commands();
+	for(;;);
 }
 
 void init(void) {
