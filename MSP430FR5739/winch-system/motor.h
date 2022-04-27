@@ -49,10 +49,10 @@ void stopMainMotor(void);
 
 int isMotorOn(void);
 
-// Returns negative if error otherwise position between 0-360
-unsigned int getCurrentPosition(void);
+// Returns negative if error. position value will be between 0-360
+int getCurrentPosition(unsigned int * position);
 
 // Calculates the direction to rotate the motor
-unsigned int getDirection(unsigned int position);
+unsigned int getDirection(unsigned int position, unsigned int * dir);
 
 #endif /* MOTOR_H_ */

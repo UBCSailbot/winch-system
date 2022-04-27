@@ -9,6 +9,7 @@
 #define COMMANDS_H_
 
 #include <stddef.h>
+#include "statemachine.h"
 
 #define ACTIVE_CMD_SIZE 4
 
@@ -50,6 +51,9 @@ unsigned int is_busy(int cmd_id);
 //-- Indicates if the max number of active commands have been reached
 unsigned int max_active_reached(void);
 
+//-- Clears all active commands
+void clear_active_commands(void);
+
 //-- GETERS and SETTERS --
 
 //-- Saves the current state of the command in its structure
@@ -70,7 +74,7 @@ t_cmd * new_command(int cmd_id, unsigned int data1, unsigned int data2, unsigned
     if (cmd_index < ACTIVE_CMD_SIZE - 1) {
         cmd_index++;
         new_cmd = &cmd_list[cmd_index];
-        new_cmd->cont_state = DECODE;
+        new_cmd->cont_state = IDLE;
 
         if (is_busy(cmd_id)) {
             //-- The command is already active
@@ -90,9 +94,12 @@ t_cmd * new_command(int cmd_id, unsigned int data1, unsigned int data2, unsigned
 }
 
 void end_command(void) {
-    if (cmd_index == -1) return;
-
-    cmd_index--;
+    t_cmd * cur_cmd = get_current_command();
+    if (cur_cmd != (t_cmd*)0) {
+        //-- Clear current command from active
+        active_cmd &= ~cur_cmd->type;
+        cmd_index--;
+    }
 }
 
 unsigned int is_command_available(void) {
@@ -127,6 +134,15 @@ void set_uccm_msg(unsigned int uccm_msg) {
     if (cur_cmd != (t_cmd*)0) {
         cur_cmd->msg = uccm_msg;
     }
+}
+
+void clear_all_commands(void) {
+
+    //-- minus one indicates if the list active list is empty
+    cmd_index = -1;
+
+    //-- Reset active command tracker
+    active_cmd = 0;
 }
 
 static t_cmd * get_current_command(void) {

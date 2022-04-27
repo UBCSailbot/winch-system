@@ -160,17 +160,19 @@ int isMotorOn(void) {
     return motor_state;
 }
 
-unsigned int getCurrentPosition(void) {
+int getCurrentPosition(unsigned int * position) {
     unsigned int voltage;
     int err;
 
     err = receive_potentiometer(&voltage);
     if (err) return err;
 
-    return (unsigned int) (voltage - 500)/POT_SCALAR;
+    *position = (unsigned int) (voltage - 500)/POT_SCALAR;
+
+    return 0;
 }
 
-unsigned int getDirection(unsigned int position) {
+unsigned int getDirection(unsigned int position, unsigned int * dir) {
     unsigned int voltage;
     int err;
     unsigned int setpoint;
@@ -182,10 +184,12 @@ unsigned int getDirection(unsigned int position) {
 
     if (voltage == setpoint) {
         //-- Position Reached
-        return REST;
+        *dir = REST;
     } else {
-        return voltage < setpoint ? ANTICLOCKWISE : CLOCKWISE;
+        *dir = voltage < setpoint ? ANTICLOCKWISE : CLOCKWISE;
     }
+
+    return 0;
 }
 
 
