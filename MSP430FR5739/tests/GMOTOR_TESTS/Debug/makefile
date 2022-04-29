@@ -14,6 +14,7 @@ ORDERED_OBJS += \
 "./gearmotor.obj" \
 "./main.obj" \
 "./spi.obj" \
+"../lnk_msp430fr5739.cmd" \
 $(GEN_CMDS__FLAG) \
 -llibmpu_init_fr57xx.a \
 -llibmath.a \
@@ -137,11 +138,11 @@ BIN_OUTPUTS__QUOTED += \
 
 
 # All Target
-all: $(OBJS) $(GEN_CMDS)
+all: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@$(MAKE) --no-print-directory -Onone "GMOTOR_TESTS.out"
 
 # Tool invocations
-GMOTOR_TESTS.out: $(OBJS) $(GEN_CMDS)
+GMOTOR_TESTS.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: MSP430 Linker'
 	"C:/ti/ccs1120/ccs/tools/compiler/ti-cgt-msp430_21.6.0.LTS/bin/cl430" -vmspx --use_hw_mpy=F5 --advice:power=all --define=__MSP430FR5739__ --define=_MPU_ENABLE -g --printf_support=minimal --diag_warning=225 --diag_wrap=off --display_error_number --silicon_errata=CPU21 --silicon_errata=CPU22 --silicon_errata=CPU40 -z -m"GMOTOR_TESTS.map" --heap_size=160 --stack_size=160 --cinit_hold_wdt=on -i"C:/ti/ccs1120/ccs/ccs_base/msp430/include" -i"C:/ti/ccs1120/ccs/ccs_base/msp430/lib/5xx_6xx_FRxx" -i"C:/ti/ccs1120/ccs/ccs_base/msp430/lib/FR57xx" -i"C:/ti/ccs1120/ccs/tools/compiler/ti-cgt-msp430_21.6.0.LTS/lib" -i"C:/ti/ccs1120/ccs/tools/compiler/ti-cgt-msp430_21.6.0.LTS/include" --priority --reread_libs --define=_MPU_ENABLE --diag_wrap=off --display_error_number --warn_sections --xml_link_info="GMOTOR_TESTS_linkInfo.xml" --use_hw_mpy=F5 --rom_model -o "GMOTOR_TESTS.out" $(ORDERED_OBJS)

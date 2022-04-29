@@ -10,18 +10,22 @@
 #include "spi.h"
 #include "motor.h"
 #include "pawl.h"
+#include "debug.h"
+
+
 //-- Include uart.h in header file
 
-unsigned int state = WAIT;
+unsigned int state = IDLE;
 t_cmd * cur_cmd;
 
 void handle_commands(void) {
     char msg[RXBUF_LEN] = "";
+    unsigned int rx_flag;
 
     while (1) {
-
+        rx_flag = isReady();
         //-- If rx_ready we have an incoming msg
-        if (isReady()) {
+        if (rx_flag) {
 
             //-- If the maximum active command threshold is not reached
             if (!max_active_reached()) {
@@ -49,17 +53,18 @@ static void statemachine(char msg[RXBUF_LEN]) {
 
     switch(state) {
     case IDLE:
+        //V_PRINTF("Idle\r\n");
         //--  Idle wait
         break;
     case DECODE:
-
+        V_PRINTF("decode\r\n");
         // Decode message and find next state
         state = decode_msg(msg);
         break;
 
     //-- SET_POS states
     case START_PAWL:
-
+        V_PRINTF("START_PAWL\r\n");
         //-- Send the direction data and initialize the PAWL
         ret_val = move_pawl(cur_cmd->data2, INIT_PAWL);
 
@@ -73,7 +78,7 @@ static void statemachine(char msg[RXBUF_LEN]) {
         break;
 
     case WAIT_PAWL:
-
+        V_PRINTF("WAIT_PAWL\r\n");
         //-- Run pawl until action is complete. Action complete - 1, Run again - 0, Error < 0
         ret_val = move_pawl(cur_cmd->data2, RUN_PAWL);
 

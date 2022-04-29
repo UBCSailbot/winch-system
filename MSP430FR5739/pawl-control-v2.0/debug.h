@@ -14,8 +14,5 @@
 // used to send messages over UART for debugging purposes
 void dbg_printf(const char *format, ...);
 
-void init_UART_DBG(void);
-void putString(char* message);
-
 
 #endif /* DEBUG_H_ */

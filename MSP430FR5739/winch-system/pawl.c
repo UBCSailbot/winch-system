@@ -11,6 +11,7 @@
 #include "pawl.h"
 #include "spi.h"
 #include "motor.h"
+#include "debug.h"
 
 unsigned int motor_inc_tries = 0;
 unsigned int dir = 0;
@@ -60,8 +61,11 @@ static int disengageRight(unsigned int phase) {
     if (phase == INIT_PAWL) {
         receive_hallsensors(NULL, NULL, &pawl_right);
 
+        V_PRINTF("Pawl right: %d", pawl_right);
+
         //-- Error checking to see if we could receive pawl_right data
         if (pawl_right < 0) return -1;
+
 
         if (pawl_right <= RIGHT_THRES) {
             //-- Already disengaged (Why?)

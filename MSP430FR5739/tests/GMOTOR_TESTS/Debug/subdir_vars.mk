@@ -5,6 +5,9 @@
 SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
+CMD_SRCS += \
+../lnk_msp430fr5739.cmd 
+
 C_SRCS += \
 ../debug.c \
 ../gearmotor.c \

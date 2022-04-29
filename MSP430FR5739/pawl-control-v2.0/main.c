@@ -4,12 +4,10 @@
 #include "gearmotor.h"
 #include "debug.h"
 #include "motor.h"
-
-#define VERBOSE 1
-#define V_PRINT(str) while(VERBOSE) {putString(str); break;}
+#include "uart.h"
 
 int cur_direction = -1;
-int rx_ready = 0;
+extern int rx_ready = 0;
 extern char control_char;
 
 void init(void);
@@ -22,8 +20,10 @@ int main(void)
 	
 	init();
 
+	int err;
+
 	while(1) {
-	    while(rx_ready) {
+	    while(isReady()) {
 	        rx_ready = 0;
 	        switch(control_char) {
 	        case 'c':
@@ -45,6 +45,7 @@ int main(void)
 	            }else {
 	                V_PRINTF("\r\nFAIL\r\n");
 	        }
+	        clearReady();
 	    }
 	}
 }
@@ -53,7 +54,7 @@ int main(void)
 void init(void) {
     init_spi();
     init_gearmotor();
-    init_UART_DBG();
+    init_uart();
     init_Main_Motor();
 
     __enable_interrupt();

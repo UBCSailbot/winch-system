@@ -11,7 +11,7 @@
 #include "pawl.h"
 #include "spi.h"
 #include "motor.h"
-
+#include "debug.h"
 
 /**
  * Set the state of the paws to either engaged or disengaged
@@ -52,22 +52,25 @@ int move_pawl(void) {
  * Functions to control pawl movement
  */
 static int disengageRight(void) {
-    int pawl_right;
+    unsigned int pawl_right;
+    int err;
     int tries = 0;
     int spi_tries = 0;
 
-    receive_hallsensors(NULL, NULL, &pawl_right);
+    err = receive_hallsensors(NULL, NULL, &pawl_right);
+
+
 
     //-- Error checking to see if we could receive pawl_right data
     if (pawl_right < 0) return -1;
 
     if (pawl_right <= RIGHT_THRES) {
         //-- Already disengaged (Why?)
-        return -2;
+        return 0;
     }
 
     //-- Start the gear motor for TODO: figure out how long
-    startGearMotor(1, MEDIUM, 100);
+    startGearMotor(1, MEDIUM, 1000);
 
     do {
 
@@ -81,14 +84,19 @@ static int disengageRight(void) {
             startGearMotor(1, MEDIUM, 100);
         }
 
+        //- 10 ms
+        __delay_cycles(10000);
+
         do{
-            receive_hallsensors(NULL, NULL, &pawl_right);
+            err = receive_hallsensors(NULL, NULL, &pawl_right);
             if (++spi_tries > MAX_TRIES) return -4;
-        } while (pawl_right == -1);
+        } while (err);
 
         spi_tries = 0;
 
-    } while (pawl_right > RIGHT_THRES);
+        V_PRINTF("Pawl right: %d\r\n", pawl_right);
+
+    } while (pawl_right & 0xFF > RIGHT_THRES);
 
     stopGearMotor();
 
@@ -96,22 +104,25 @@ static int disengageRight(void) {
 }
 
 static int disengageLeft(void) {
-    int pawl_left;
+    unsigned int pawl_left;
+    int err;
     int tries = 0;
     int spi_tries = 0;
 
-    receive_hallsensors(&pawl_left, NULL, NULL);
+    err = receive_hallsensors(&pawl_left, NULL, NULL);
+
 
     //-- Error checking to see if we could receive pawl_right data
-    if (pawl_left < 0) return -1;
+    if (err < 0) return -1;
 
     if (pawl_left <= LEFT_THRES) {
         //-- Already disengaged (Why?)
-        return -2;
+        V_PRINTF("Pawl left: %x\r\n", pawl_left);
+        return 0;
     }
 
     //-- Start the gear motor for TODO: figure out how long
-    startGearMotor(0, MEDIUM, 100);
+    startGearMotor(0, MEDIUM, 1000);
 
     do {
 
@@ -126,12 +137,12 @@ static int disengageLeft(void) {
         }
 
         do{
-            receive_hallsensors(&pawl_left, NULL, NULL);
+            err = receive_hallsensors(&pawl_left, NULL, NULL);
             if (++spi_tries > MAX_TRIES) return -4;
-        } while (pawl_left == -1);
+        } while (err);
 
         spi_tries = 0;
-
+        V_PRINTF("Pawl left: %x\r\n", pawl_left);
     } while (pawl_left > LEFT_THRES);
 
     stopGearMotor();
@@ -141,18 +152,19 @@ static int disengageLeft(void) {
 
 static int disengageBoth(void) {
     int cam;
+    int err;
     int tries = 0;
     int timeout = 50;
-    const int offset = 14781;
+    const int offset = 400;
     int spi_tries = 0;
     unsigned int dir = 0;
 
-    receive_hallsensors(NULL, &cam, NULL);
+    err = receive_hallsensors(NULL, &cam, NULL);
 
-    if (cam < 0) return -1;
+    if (err < 0) return -1;
 
     cam -= offset;
-
+    V_PRINTF("Cam: %d\r\n", cam);
     if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
         //-- Already disengaged (Why?)
         return -2;
@@ -184,10 +196,13 @@ static int disengageBoth(void) {
             startGearMotor(dir, SLOW, timeout);
         }
 
+        //- 10 ms
+        __delay_cycles(10000);
+
         do{
-            receive_hallsensors(NULL, &cam, NULL);
+            err = receive_hallsensors(NULL, &cam, NULL);
             if (++spi_tries > MAX_TRIES) return -4;
-        } while (cam == -1);
+        } while (err);
 
         spi_tries = 0;
 

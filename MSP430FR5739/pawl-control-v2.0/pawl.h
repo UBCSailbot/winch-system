@@ -14,10 +14,10 @@
 #define ANTICLOCKWISE 2
 
 //-- Pawl threshold values
-#define RIGHT_THRES 10000
-#define LEFT_THRES  13000
-#define CAM_THRES_UPPER 3500
-#define CAM_THRES_LOWER -3500
+#define RIGHT_THRES 0xB900
+#define LEFT_THRES  0xf200
+#define CAM_THRES_UPPER 1000
+#define CAM_THRES_LOWER -1000
 
 #define MAX_TRIES 3
 

@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include "uart.h"
 
-
+char control_char;
 volatile int rx_flag = 0;
 char rxbuf[RXBUF_LEN] = "";
 size_t bufpos = 0;
@@ -71,57 +71,21 @@ void putString(char* message) {
     }
 }
 
-static void update_buffer(char c) {
-    switch(uart_state) {
-    case PROCESS:
-        if (c == '\n' || c == '\r') {
-            // SUCCES as line ends after 2 bytes
-            rx_flag = 1;
-            rxbuf[bufpos] = '\0';
-            uart_state = READ;
-        } else {
-            uart_state = WAIT;
-        }
-
-        bufpos = 0;
-        break;
-
-    case READ:
-
-        if (c == '\n' || c == '\r') {
-            // Less than 2 bytes - reset buffer position
-            bufpos = 0;
-        } else {
-            rxbuf[bufpos] = c;
-            bufpos++;
-
-            if (bufpos == RXBUF_LEN) uart_state = PROCESS; // If we reached the end of the buffer Proccess it
-        }
-
-        break;
-
-    case WAIT:
-        // Go to read state when receiving end of character and rx_flag is not set
-        if ((c == '\n' || c == '\r') && !rx_flag) uart_state = READ;
-        break;
-
-    default:
-        break;
-    }
-
-}
-
 //-- USCI_A1 interrupt ISR
 #pragma vector = USCI_A1_VECTOR
 __interrupt void USCI_A1_ISR(void) {
     char c = 0;
-
     switch(__even_in_range(UCA1IV,18)) {
     case 0x00: // No interrupts
         break;
     case 0x02: // Vector 2: UCRXIFG
-        c = UCA1RXBUF;
-        update_buffer(c);
+        if (!rx_flag) {
+            c = UCA1RXBUF;
+            control_char = c;
+            rx_flag = 1;
+            UCA1TXBUF = c;
+        }
+
         break;
     case 0x03: // Vector 4: UCTXIFG
         break;
@@ -129,24 +93,4 @@ __interrupt void USCI_A1_ISR(void) {
         break;
     }
 }
-
-//-- TEST UART
-//#pragma vector = USCI_A1_VECTOR
-//__interrupt void USCI_A1_ISR(void) {
-//    char c = 0;
-//    switch(__even_in_range(UCA1IV,18)) {
-//    case 0x00: // No interrupts
-//        break;
-//    case 0x02: // Vector 2: UCRXIFG
-//
-//        c = UCA1RXBUF;
-//        UCA1TXBUF = c;
-//
-//        break;
-//    case 0x03: // Vector 4: UCTXIFG
-//        break;
-//    default:
-//        break;
-//    }
-//}
 
