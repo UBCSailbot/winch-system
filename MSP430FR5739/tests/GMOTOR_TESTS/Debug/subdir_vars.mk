@@ -12,36 +12,42 @@ C_SRCS += \
 ../debug.c \
 ../gearmotor.c \
 ../main.c \
-../spi.c 
+../spi.c \
+../uart.c 
 
 C_DEPS += \
 ./debug.d \
 ./gearmotor.d \
 ./main.d \
-./spi.d 
+./spi.d \
+./uart.d 
 
 OBJS += \
 ./debug.obj \
 ./gearmotor.obj \
 ./main.obj \
-./spi.obj 
+./spi.obj \
+./uart.obj 
 
 OBJS__QUOTED += \
 "debug.obj" \
 "gearmotor.obj" \
 "main.obj" \
-"spi.obj" 
+"spi.obj" \
+"uart.obj" 
 
 C_DEPS__QUOTED += \
 "debug.d" \
 "gearmotor.d" \
 "main.d" \
-"spi.d" 
+"spi.d" \
+"uart.d" 
 
 C_SRCS__QUOTED += \
 "../debug.c" \
 "../gearmotor.c" \
 "../main.c" \
-"../spi.c" 
+"../spi.c" \
+"../uart.c" 
 
 

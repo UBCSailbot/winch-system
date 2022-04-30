@@ -41,7 +41,9 @@ int move_pawl(void) {
     case REST:
         err = disengageBoth();
         break;
-
+    case ROTATE_CW:
+        err = test_func();
+        break;
     }
 
     return err;
@@ -59,17 +61,15 @@ static int disengageRight(void) {
 
     err = receive_hallsensors(NULL, NULL, &pawl_right);
 
-
-
     //-- Error checking to see if we could receive pawl_right data
-    if (pawl_right < 0) return -1;
+    if (err < 0) return -1;
 
     if (pawl_right <= RIGHT_THRES) {
         //-- Already disengaged (Why?)
+        V_PRINTF("Pawl right: %x\r\n", pawl_right);
         return 0;
     }
 
-    //-- Start the gear motor for TODO: figure out how long
     startGearMotor(1, MEDIUM, 1000);
 
     do {
@@ -84,9 +84,6 @@ static int disengageRight(void) {
             startGearMotor(1, MEDIUM, 100);
         }
 
-        //- 10 ms
-        __delay_cycles(10000);
-
         do{
             err = receive_hallsensors(NULL, NULL, &pawl_right);
             if (++spi_tries > MAX_TRIES) return -4;
@@ -94,9 +91,9 @@ static int disengageRight(void) {
 
         spi_tries = 0;
 
-        V_PRINTF("Pawl right: %d\r\n", pawl_right);
+        V_PRINTF("Pawl right: %x\r\n", pawl_right);
 
-    } while (pawl_right & 0xFF > RIGHT_THRES);
+    } while (pawl_right > RIGHT_THRES);
 
     stopGearMotor();
 
@@ -111,7 +108,6 @@ static int disengageLeft(void) {
 
     err = receive_hallsensors(&pawl_left, NULL, NULL);
 
-
     //-- Error checking to see if we could receive pawl_right data
     if (err < 0) return -1;
 
@@ -121,7 +117,6 @@ static int disengageLeft(void) {
         return 0;
     }
 
-    //-- Start the gear motor for TODO: figure out how long
     startGearMotor(0, MEDIUM, 1000);
 
     do {
@@ -153,67 +148,99 @@ static int disengageLeft(void) {
 static int disengageBoth(void) {
     int cam;
     int err;
-    int tries = 0;
-    int timeout = 50;
-    const int offset = 400;
-    int spi_tries = 0;
+    unsigned int spi_tries = 0;
+    int motor_inc_tries = 0;
     unsigned int dir = 0;
+    unsigned int speed = SLOW;
+
+    //-- set direction to backward
+    dir = BACKWARD;
 
     err = receive_hallsensors(NULL, &cam, NULL);
 
     if (err < 0) return -1;
 
-    cam -= offset;
-    V_PRINTF("Cam: %d\r\n", cam);
     if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
         //-- Already disengaged (Why?)
-        return -2;
+        V_PRINTF("CAM: %d\r\n", cam);
+        return 0;
     }
 
-    if (cam > 0) {
+    if (cam > CAM_MID) {
         //-- Go backward
-        dir = 0;
+        dir = BACKWARD;
     } else {
         //-- Go forward
-        dir = 1;
+        dir = FORWARD;
     }
 
-    startGearMotor(dir, SLOW, timeout);
+    startGearMotor(dir, speed, 100);
 
     do {
 
         if (!isGearMotorOn()) {
-            if (++tries > MAX_TRIES) return -3;
+            if (++motor_inc_tries > MAX_TRIES) return -3;
 
-            startGearMotor(dir, SLOW, timeout);
+            speed = SUPER_SLOW;
+
+            startGearMotor(dir, SUPER_SLOW, 100);
         }
 
         //-- If cam value is positive and dir is forward. Reverse
-        if (cam > 0 && dir || cam < 0 && !dir) {
+        if (cam > CAM_MID && dir == FORWARD || cam < CAM_MID && dir == BACKWARD) {
             stopGearMotor();
-            dir ^= 1;
-            //-- Reverse gear motor
-            startGearMotor(dir, SLOW, timeout);
-        }
 
-        //- 10 ms
-        __delay_cycles(10000);
+            //-- toggle direction
+            dir ^= FORWARD;
+
+            //-- Reverse gear motor
+            startGearMotor(dir, SUPER_SLOW, 100);
+        }
 
         do{
             err = receive_hallsensors(NULL, &cam, NULL);
             if (++spi_tries > MAX_TRIES) return -4;
-        } while (err);
+        } while (err == -1);
 
         spi_tries = 0;
 
-        cam -= offset;
-
-        //timeout -= 5;
     } while (cam > CAM_THRES_UPPER || cam < CAM_THRES_LOWER);
 
     stopGearMotor();
+    V_PRINTF("CAM: %d\r\n", cam);
 
     return 0;
 }
 
+
+/*
+ * @brief derain12: Specific function to continuously run cam and read hall sensors data
+ *                  Runs for 10 seconds, reads every 1 second
+ *
+ */
+static int test_func(void) {
+    unsigned int pawl_left,pawl_right;
+    signed int cam;
+    int err;
+    int tries = 0;
+    int spi_tries = 0;
+
+    startGearMotor(1, MEDIUM, 100);
+    __delay_cycles(12500);
+    startGearMotor(1, even_more_slow, 5000);
+
+    while(isGearMotorOn()){
+        err = receive_hallsensors(&pawl_left,&cam, &pawl_right);
+
+        V_PRINTF("\r\nPAWL_LEFT: %x | CAM: %d | PAWL_RIGHT: %x\r\n", pawl_left, cam, pawl_right);
+        //-- Error checking to see if we could receive pawl_right data
+        if (err < 0){
+            stopGearMotor();
+            return -1;
+        }
+        //-- DCOCLK is 8MHz by default, MCLK source is DCOCLK with 1/8 divider
+    }
+
+    return 0;
+}
 

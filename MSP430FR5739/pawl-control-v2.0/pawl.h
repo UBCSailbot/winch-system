@@ -12,12 +12,20 @@
 #define REST 0
 #define CLOCKWISE 1
 #define ANTICLOCKWISE 2
+#define ROTATE_CW 3
+
+//-- Gear motor direction
+#define BACKWARD   0
+#define FORWARD    1
 
 //-- Pawl threshold values
-#define RIGHT_THRES 0xB900
-#define LEFT_THRES  0xf200
-#define CAM_THRES_UPPER 1000
-#define CAM_THRES_LOWER -1000
+#define RIGHT_THRES 0xfe50
+#define LEFT_THRES  0xef90
+#define CAM_THRES_UPPER 50
+#define CAM_THRES_LOWER -350
+
+#define CAM_MID -300
+#define CAM_TIMEOUT 50
 
 #define MAX_TRIES 3
 
@@ -35,5 +43,7 @@ static int disengageLeft(void);
 
 //-- Disengages both pawls by controlling gear motor
 static int disengageBoth(void);
+
+static int test_func(void);
 
 #endif /* PAWL_H_ */

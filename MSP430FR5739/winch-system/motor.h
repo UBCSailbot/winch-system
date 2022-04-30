@@ -39,7 +39,7 @@
 void init_Main_Motor(void);
 
 //-- Moves the Main Motor either clockwise or anti-clockwise to a specified position (0 - 360)
-int setMainMotorPosition(unsigned int position, unsigned int dir, unsigned int phase);
+int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int phase);
 
 //-- Increment motor by a certain amount
 int incrementMainMotor(int direction, int increment);

@@ -14,6 +14,7 @@ ORDERED_OBJS += \
 "./gearmotor.obj" \
 "./main.obj" \
 "./spi.obj" \
+"./uart.obj" \
 "../lnk_msp430fr5739.cmd" \
 $(GEN_CMDS__FLAG) \
 -llibmpu_init_fr57xx.a \
@@ -159,8 +160,8 @@ GMOTOR_TESTS.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "debug.obj" "gearmotor.obj" "main.obj" "spi.obj" 
-	-$(RM) "debug.d" "gearmotor.d" "main.d" "spi.d" 
+	-$(RM) "debug.obj" "gearmotor.obj" "main.obj" "spi.obj" "uart.obj" 
+	-$(RM) "debug.d" "gearmotor.d" "main.d" "spi.d" "uart.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

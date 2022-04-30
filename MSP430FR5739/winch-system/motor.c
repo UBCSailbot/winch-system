@@ -12,6 +12,7 @@ int motor_increment;
 volatile int motor_state;
 unsigned int direction;
 unsigned int motor_tries = 0;
+unsigned int setpoint;
 
 
 /**
@@ -81,27 +82,26 @@ int incrementMainMotor(int dir, int increment) {
  *
  * Returns -1 when error and 0 when success and 1 if motor has reached setpoint
  */
-int setMainMotorPosition(unsigned int position, unsigned int dir, unsigned int phase) {
+int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int phase) {
 
     unsigned int voltage;
     int err;
-    unsigned int setpoint;
 
     if (phase == INIT_MMOTOR) {
         setpoint = (position * POT_SCALAR) + 500;
 
         if (position > 360) return -1;
 
-        direction = dir;
+        direction = *dir;
 
         //-- Set DIR pin
         switch(direction) {
         case CLOCKWISE:
-            P2OUT |= DIR;
+            P2OUT &= ~DIR;
             break;
 
         case ANTICLOCKWISE:
-            P2OUT &= ~DIR;
+            P2OUT |= DIR;
             break;
 
         case REST:
@@ -127,17 +127,20 @@ int setMainMotorPosition(unsigned int position, unsigned int dir, unsigned int p
         err = receive_potentiometer(&voltage);
         if (err < 0) return -2;
 
-        if (direction == CLOCKWISE && voltage < setpoint || direction == ANTICLOCKWISE && voltage > setpoint) {
-            //-- Toggle the DIR pin
-            P2OUT ^= DIR;
+        if (direction == CLOCKWISE && voltage > setpoint || direction == ANTICLOCKWISE && voltage < setpoint) {
+            //-- Stops the motor before switching its direction
+            stopMainMotor();
 
-            //-- Toggle the direction
-            direction ^= CLOCKWISE ^ ANTICLOCKWISE;
+            direction ^= ANTICLOCKWISE ^ CLOCKWISE;
 
-            if (++motor_tries > MAX_MOTOR_TRIES) return -5;
+            //-- Toggle direction
+            *dir = direction;
+
+            return 2;
+            //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
         }
 
-        if (voltage == setpoint) {
+        if (voltage <= setpoint + 100 && voltage >= setpoint - 100) {
             stopMainMotor();
             return 1;
         }
@@ -186,7 +189,7 @@ unsigned int getDirection(unsigned int position, unsigned int * dir) {
         //-- Position Reached
         *dir = REST;
     } else {
-        *dir = voltage < setpoint ? ANTICLOCKWISE : CLOCKWISE;
+        *dir = voltage < setpoint ? CLOCKWISE : ANTICLOCKWISE;
     }
 
     return 0;

@@ -18,13 +18,13 @@
 #define FORWARD    1
 
 //-- Pawl threshold values
-#define RIGHT_THRES 10000
-#define LEFT_THRES  13000
-#define CAM_THRES_UPPER 3500
-#define CAM_THRES_LOWER -3500
+#define RIGHT_THRES 0xfe50
+#define LEFT_THRES  0xef90
+#define CAM_THRES_UPPER 50
+#define CAM_THRES_LOWER -350
 
-#define CAM_OFFSET  14781
-#define CAM_TIMEOUT 50
+#define CAM_MID -300
+#define CAM_TIMEOUT 100
 
 #define MAX_TRIES 3
 

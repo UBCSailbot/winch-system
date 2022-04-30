@@ -61,7 +61,7 @@ void init_spi(void) {
 /* Allows to receive Hallsensor data from either of the sensors.
  * If a certain sensor data is not needed pass in a NULL
  */
-int receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
+int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_right) {
     int err = 0;
     if (pawl_left != NULL) {
         if (configHall(AIN0_CONF) < 0) {
@@ -160,10 +160,10 @@ int configHall(unsigned int config) {
  * bytes - number of bytes being sent
  * enable - the slave device being communicated with in P3
  */
-static int spi_io(int data, int bytes, int chipSel) {
+static unsigned int spi_io(unsigned int data, int bytes, int chipSel) {
     int rx_buf, offset;
-    int rx_data = 0;
-    int tmp;
+    unsigned int rx_data = 0;
+    unsigned int tmp;
     int i = 1;
 
 

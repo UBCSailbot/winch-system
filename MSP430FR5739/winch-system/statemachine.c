@@ -92,9 +92,9 @@ static void statemachine(char msg[RXBUF_LEN]) {
         break;
 
     case START_MOTOR:
-
+        V_PRINTF("START_MOTOR\r\n");
         //-- Initialize motor functions
-        ret_val = setMainMotorPosition(cur_cmd->data1, cur_cmd->data2, INIT_MMOTOR);
+        ret_val = setMainMotorPosition(cur_cmd->data1, &cur_cmd->data2, INIT_MMOTOR);
         if (ret_val < 0) {
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
@@ -105,14 +105,19 @@ static void statemachine(char msg[RXBUF_LEN]) {
         break;
 
     case WAIT_MOTOR:
-
+        V_PRINTF("WAIT_MOTOR\r\n");
         //-- Run motor until action is complete. Action complete - 1, Run again - 0, Error < 0
-        ret_val = setMainMotorPosition(cur_cmd->data1, cur_cmd->data2, RUN_MMOTOR);
+        ret_val = setMainMotorPosition(cur_cmd->data1, &cur_cmd->data2, RUN_MMOTOR);
         if (ret_val < 0) {
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
             state = ABORT;
-        } else if (ret_val == 1) {
+        } else if (ret_val == 2) {
+            //-- Change sate to START_PAWLs
+            state = START_PAWL;
+        }
+
+        if (ret_val == 1) {
             state = START_ENGAGE_PAWL;
         }
         break;

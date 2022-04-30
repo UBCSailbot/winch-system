@@ -44,21 +44,38 @@ void init_gearmotor(void) {
     P1OUT |= ENABLE;
 
 
-    TB0CCR0 = D_PWM_UPPERC; //-- Timer_B Main timer 700Hz
-    TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset
+    //-- Refer to 12.2.5.1.1
+    //-- CCR0 for upper trapezoidal limit (lowers output), determines PWM frequency
+    //-- CCR1 for lower trapezoidal limit (raises output), CCR1 < CCR0
+
+    TB0CCR0 = D_PWM_UPPERC; //-- Timer_B Main timer 700Hz, TB0CCR0 is buffered to TB0CL0
+    TB0CCTL1 |= OUTMOD_2;   //-- OUTMOD - Toggle/reset, equivalent to PWM
     TB0CTL |= TBSSEL_2;     //-- Clock SMCLK (1 Mhz)
 
 
     //-- Initialize timeout timer --
 
+
     //-- Timer_A Main timer 1s
     TA1CCR0 = D_TIMEOUTC;
-    //-- ACLK (32.768 khz)
+    //-- ACLK (10 khz)
     TA1CTL |= TASSEL_1;
 
 
 }
 
+/*
+ * @brief Starts motor with given direction, speed, and timeout
+ *  int forward --> 0 for reverse (anti-clockwise, towards left pawl)
+ *                  1 for forward (clockwise, towards right pawl)
+ *  int speed   --> PWM duty cycle, input from 1 to 1427 (D_PWM_UPPERC-1)
+ *                  1427 is 1% duty cycle, 1 is 99% duty cycle
+ *                  Formula is 1427*(1-duty_decimal)
+ *  int timeout --> Timeout for max duration of motor run after startGearMotor
+ *                  Resets to new timeout when startGearMotor is run again
+ *                  Input in millisecond, example 500 = 500 milliseconds
+ *                  Max input is 6553 (6.553s)
+ */
 void startGearMotor(int forward, int speed, int timeout) {
 
     PJOUT &= ~MODE;     //-- FAST decay mode
@@ -74,7 +91,7 @@ void startGearMotor(int forward, int speed, int timeout) {
     TB0CTL |= MC_1;     //-- Count up mode
 
     //-- Timeout timer --
-    TA1CCR0 = timeout * CLKFREQ/1000;
+    TA1CCR0 = (timeout * 10);
     TA1CTL |= MC_1;     //-- Count up mode
     TA1CTL |= TACLR;    //-- Clear timer count
 

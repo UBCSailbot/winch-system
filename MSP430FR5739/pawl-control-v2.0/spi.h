@@ -22,7 +22,7 @@
 void init_spi(void);
 
 //-- Receives data from hallsensors
-int receive_hallsensors(unsigned int* pawl_left,unsigned  int* cam,unsigned int* pawl_right);
+int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_right);
 
 //-- Receives data from potentiometer. Return -1 if voltage not in the range
 int receive_potentiometer(unsigned int* pot_data);

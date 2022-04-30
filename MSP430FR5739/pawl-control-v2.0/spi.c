@@ -61,7 +61,7 @@ void init_spi(void) {
 /* Allows to receive Hallsensor data from either of the sensors.
  * If a certain sensor data is not needed pass in a NULL
  */
-int receive_hallsensors(unsigned int* pawl_left, unsigned int* cam,unsigned int* pawl_right) {
+int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_right) {
     int err = 0;
     if (pawl_left != NULL) {
         if (configHall(AIN0_CONF) < 0) {

@@ -3,6 +3,7 @@
 #include "gearmotor.h"
 #include "debug.h"
 #include "spi.h"
+#include "uart.h"
 
 //-- Types of tests
 #define MOVE_TIME_T 1
@@ -10,11 +11,9 @@
 
 //-- CONTROL
 #define TEST_SEL SPI_DATA_T
-#define VERBOSE 1
-#define WAIT 3500000
-#define SPEED_SEL 1     //-- Slow: 0 Medium: 1 Fast: 2
 
-#define V_PRINT(str) if(VERBOSE) {putString(str);}
+#define DELAY 3500000
+#define SPEED_SEL 1     //-- Slow: 0 Medium: 1 Fast: 2
 
 
 void test_motorMovementTimeout(void);
@@ -28,7 +27,7 @@ int main(void)
     WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
 
     init_gearmotor();
-    init_UART_DBG();
+    init_uart();
     init_spi();
 
     __enable_interrupt();
@@ -42,7 +41,7 @@ int main(void)
         break;
     }
 
-    V_PRINT("DONE\n\r")
+    V_PRINTF("DONE\n\r")
     for(;;);
 }
 
@@ -54,32 +53,32 @@ void test_motorMovementTimeout(void) {
     startGearMotor(1, SLOW, 200);
     while(isGearMotorOn());
 
-    __delay_cycles(WAIT);
+    __delay_cycles(DELAY);
 
     startGearMotor(0, SLOW, 200);
     while(isGearMotorOn());
 
-    __delay_cycles(WAIT);
+    __delay_cycles(DELAY);
 
     startGearMotor(1, MEDIUM, 200);
     while(isGearMotorOn());
 
-    __delay_cycles(WAIT);
+    __delay_cycles(DELAY);
 
     startGearMotor(0, MEDIUM, 200);
     while(isGearMotorOn());
 
-    __delay_cycles(WAIT);
+    __delay_cycles(DELAY);
 
     startGearMotor(1, FAST, 100);
     while(isGearMotorOn());
 
-    __delay_cycles(WAIT);
+    __delay_cycles(DELAY);
 
     startGearMotor(0, FAST, 100);
     while(isGearMotorOn());
 
-    __delay_cycles(WAIT);
+    __delay_cycles(DELAY);
 }
 
 void test_receiveSPI(void) {
@@ -88,10 +87,9 @@ void test_receiveSPI(void) {
     int speeds[3] =  {SLOW, MEDIUM, FAST};
     char* speeds_str[3] = {"SLOW\0", "MEDIUM\0", "FAST\0"};
     unsigned int index = SPEED_SEL;
-    int pawl_left, pawl_right, cam;
-    char str[300] = "";
+    unsigned int pawl_left, pawl_right, cam;
 
-    V_PRINT("test_receiveSPI");
+    V_PRINTF("test_receiveSPI");
 
     while (1) {
 
@@ -101,10 +99,9 @@ void test_receiveSPI(void) {
 
         receive_hallsensors(&pawl_left, &cam, &pawl_right);
 
-        sprintf(str, "[%s] RIGHT: Pawl left: %d, CAM: %d, Pawl_right: %d \r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
-        V_PRINT(str);
+        V_PRINTF("[%s] RIGHT: Pawl left: %x, CAM: %d, Pawl_right: %x \r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
 
-        __delay_cycles(WAIT);
+        __delay_cycles(DELAY);
 
         //-- Move to the left
         startGearMotor(0, speeds[index], timeout[index]);
@@ -112,10 +109,9 @@ void test_receiveSPI(void) {
 
         receive_hallsensors(&pawl_left, &cam, &pawl_right);
 
-        sprintf(str, "[%s] LEFT: Pawl left: %d, CAM: %d, Pawl_right: %d\r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
-        V_PRINT(str);
+        V_PRINTF("[%s] LEFT: Pawl left: %x, CAM: %d, Pawl_right: %x\r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
 
-        __delay_cycles(WAIT);
+        __delay_cycles(DELAY);
 
         //-- Move to the center
         startGearMotor(1, speeds[index], timeout[index]/(2*(index+1)));
@@ -123,9 +119,8 @@ void test_receiveSPI(void) {
 
         receive_hallsensors(&pawl_left, &cam, &pawl_right);
 
-        sprintf(str, "[%s] CENTER: Pawl left: %d, CAM: %d, Pawl_right: %d\r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
-        V_PRINT(str);
+        V_PRINTF("[%s] CENTER: Pawl left: %x, CAM: %d, Pawl_right: %x\r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
 
-        __delay_cycles(WAIT);
+        __delay_cycles(DELAY);
     }
 }
