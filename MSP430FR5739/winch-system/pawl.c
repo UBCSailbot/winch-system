@@ -70,21 +70,9 @@ static int disengageRight(unsigned int phase) {
         motor_inc_tries = 0;
 
         //-- Turn the motor on until it reaches
-        startGearMotor(1, MEDIUM, 1000);
+        startGearMotor(1, MEDIUM, 200);
 
     } else {    //-- RUN_PAWL
-
-        do{
-            err = receive_hallsensors(NULL, NULL, &pawl_right);
-            if (++spi_tries > MAX_TRIES) return -4;
-        } while (err);
-
-        if (pawl_right <= RIGHT_THRES) {
-            stopGearMotor();
-            stopMainMotor();
-            turnOffMotor();
-            return 1;
-        }
 
         if (!isGearMotorOn() && !isMotorOn()) {
             //-- If gear motor has timed out
@@ -93,8 +81,21 @@ static int disengageRight(unsigned int phase) {
             incrementMainMotor(CLOCKWISE, 5);
 
             //-- Start gear motor again
-            startGearMotor(1, MEDIUM, 1000);
+            startGearMotor(1, MEDIUM, 200);
         }
+
+
+        do{
+            err = receive_hallsensors(NULL, NULL, &pawl_right);
+            if (++spi_tries > MAX_TRIES) return -4;
+        } while (err);
+
+        if (pawl_right <= RIGHT_THRES) {
+            stopGearMotor();
+            while (isMotorOn());
+            return 1;
+        }
+
     }
 
     return 0;
@@ -119,7 +120,7 @@ static int disengageLeft(unsigned int phase) {
 
         motor_inc_tries = 0;
 
-        startGearMotor(0, MEDIUM, 1000);
+        startGearMotor(0, MEDIUM, 200);
     } else {    //-- RUN_PAWL
 
         if (!isGearMotorOn() && !isMotorOn()) {
@@ -130,7 +131,7 @@ static int disengageLeft(unsigned int phase) {
             incrementMainMotor(ANTICLOCKWISE, 5);
 
             //-- Start gear motor again
-            startGearMotor(0, MEDIUM, 1000);
+            startGearMotor(0, MEDIUM, 200);
         }
 
         do{
@@ -140,8 +141,7 @@ static int disengageLeft(unsigned int phase) {
 
         if (pawl_left <= LEFT_THRES) {
             stopGearMotor();
-            stopMainMotor();
-            turnOffMotor();
+            while (isMotorOn());
             return 1;
         }
     }
