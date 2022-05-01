@@ -20,11 +20,11 @@
 //-- Pawl threshold values
 #define RIGHT_THRES 0xfe50
 #define LEFT_THRES  0xef90
-#define CAM_THRES_UPPER 50
-#define CAM_THRES_LOWER -350
+#define CAM_THRES_UPPER -200
+#define CAM_THRES_LOWER -400
 
 #define CAM_MID -300
-#define CAM_TIMEOUT 100
+#define CAM_TIMEOUT 50
 
 #define MAX_TRIES 3
 

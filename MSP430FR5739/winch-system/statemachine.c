@@ -57,14 +57,14 @@ static void statemachine(char msg[RXBUF_LEN]) {
         //--  Idle wait
         break;
     case DECODE:
-        V_PRINTF("decode\r\n");
+        //V_PRINTF("decode\r\n");
         // Decode message and find next state
         state = decode_msg(msg);
         break;
 
     //-- SET_POS states
     case START_PAWL:
-        V_PRINTF("START_PAWL\r\n");
+        //V_PRINTF("START_PAWL\r\n");
         //-- Send the direction data and initialize the PAWL
         ret_val = move_pawl(cur_cmd->data2, INIT_PAWL);
 
@@ -78,7 +78,7 @@ static void statemachine(char msg[RXBUF_LEN]) {
         break;
 
     case WAIT_PAWL:
-        V_PRINTF("WAIT_PAWL\r\n");
+        //V_PRINTF("WAIT_PAWL\r\n");
         //-- Run pawl until action is complete. Action complete - 1, Run again - 0, Error < 0
         ret_val = move_pawl(cur_cmd->data2, RUN_PAWL);
 
@@ -92,7 +92,7 @@ static void statemachine(char msg[RXBUF_LEN]) {
         break;
 
     case START_MOTOR:
-        V_PRINTF("START_MOTOR\r\n");
+        //V_PRINTF("START_MOTOR\r\n");
         //-- Initialize motor functions
         ret_val = setMainMotorPosition(cur_cmd->data1, &cur_cmd->data2, INIT_MMOTOR);
         if (ret_val < 0) {
@@ -105,9 +105,11 @@ static void statemachine(char msg[RXBUF_LEN]) {
         break;
 
     case WAIT_MOTOR:
-        V_PRINTF("WAIT_MOTOR\r\n");
+        //V_PRINTF("WAIT_MOTOR\r\n");
         //-- Run motor until action is complete. Action complete - 1, Run again - 0, Error < 0
         ret_val = setMainMotorPosition(cur_cmd->data1, &cur_cmd->data2, RUN_MMOTOR);
+        //V_PRINTF("Ret value: %d\r\n", ret_val);
+        //V_PRINTF("MOTOR state: %d\r\n", P1OUT & 1);
         if (ret_val < 0) {
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
@@ -115,15 +117,13 @@ static void statemachine(char msg[RXBUF_LEN]) {
         } else if (ret_val == 2) {
             //-- Change sate to START_PAWLs
             state = START_PAWL;
-        }
-
-        if (ret_val == 1) {
+        } else if (ret_val == 1) {
             state = START_ENGAGE_PAWL;
         }
         break;
 
     case START_ENGAGE_PAWL:
-
+        //V_PRINTF("START_ENGAGE_PAW\r\n");
         //-- Initialize Pawls to engage
         ret_val = move_pawl(REST, INIT_PAWL);
         if (ret_val < 0) {
@@ -136,14 +136,14 @@ static void statemachine(char msg[RXBUF_LEN]) {
         break;
 
     case WAIT_ENGAGE_PAWL:
-
+        //V_PRINTF("WAIT_ENGAGE_PAWL\r\n");
         //-- Run pawl control until both engaged. Action complete - 1, Run again - 0, Error < 0
         ret_val = move_pawl(REST, RUN_PAWL);
         if (ret_val < 0) {
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
             state = ABORT;
-        } else {
+        } else if (ret_val == 1){
             state = SEND_TO_UCCM;
         }
         break;
@@ -286,7 +286,12 @@ static int abort_action(void) {
        if (err < 0) {
            return -2;
        }
+       //-- 100 Hz
+       __delay_cycles(10000);
    } while (err != 1);
+
+   //-- Turn off power to the main motor
+   turnOffMotor();
 
    return 0;
 }

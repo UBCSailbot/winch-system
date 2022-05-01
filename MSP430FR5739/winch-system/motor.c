@@ -51,11 +51,11 @@ int incrementMainMotor(int dir, int increment) {
     //-- Set DIR pin
     switch(dir) {
     case CLOCKWISE:
-        P2OUT |= DIR;
+        P2OUT &= ~DIR;
         break;
 
     case ANTICLOCKWISE:
-        P2OUT &= ~DIR;
+        P2OUT |= DIR;
         break;
 
     default:
@@ -140,8 +140,9 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
             //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
         }
 
-        if (voltage <= setpoint + 100 && voltage >= setpoint - 100) {
+        if (voltage <= setpoint + 25 && voltage >= setpoint - 25) {
             stopMainMotor();
+            turnOffMotor();
             return 1;
         }
     }
@@ -152,10 +153,13 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
 void stopMainMotor(void) {
     TB1CTL &= ~MC_1;        // Hault PWM timer
     TB1CTL |= TBCLR;        // Clear timer count
-    P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
 
     TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode
     TB1CCTL1 &= ~OUT;        // Force output to zero
+}
+
+void turnOffMotor(void) {
+    P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
     motor_state = OFF;
 }
 
@@ -170,7 +174,7 @@ int getCurrentPosition(unsigned int * position) {
     err = receive_potentiometer(&voltage);
     if (err) return err;
 
-    *position = (unsigned int) (voltage - 500)/POT_SCALAR;
+    *position = (unsigned int) ( (voltage - 500)/POT_SCALAR );
 
     return 0;
 }
@@ -203,6 +207,7 @@ __interrupt void TIMER1_B0_ISR (void) {
     if (motor_increment <= 0) {
         TB1CCTL0 &= ~CCIE;  // Disable interrupts
         stopMainMotor();
+        turnOffMotor();
         motor_increment = 0;
     } else {
         motor_increment--;

@@ -14,7 +14,7 @@ void init(void);
  * main.c
  */
 int main(void)
-    {
+{
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
 	init();
 	V_PRINTF("MAIN\r\n");

@@ -34,7 +34,6 @@ unsigned int dir = 0;
  */
 int move_pawl(unsigned int direction, unsigned int phase) {
     int ret = 0;
-    V_PRINTF("dir=%d\r\n",direction);
     switch(direction) {
     case CLOCKWISE:
         ret = disengageLeft(phase);
@@ -75,16 +74,6 @@ static int disengageRight(unsigned int phase) {
 
     } else {    //-- RUN_PAWL
 
-        if (!isGearMotorOn()) {
-            //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) return -3;
-
-            incrementMainMotor(CLOCKWISE, 5);
-
-            //-- Start gear motor again
-            startGearMotor(1, MEDIUM, 100);
-        }
-
         do{
             err = receive_hallsensors(NULL, NULL, &pawl_right);
             if (++spi_tries > MAX_TRIES) return -4;
@@ -92,7 +81,19 @@ static int disengageRight(unsigned int phase) {
 
         if (pawl_right <= RIGHT_THRES) {
             stopGearMotor();
+            stopMainMotor();
+            turnOffMotor();
             return 1;
+        }
+
+        if (!isGearMotorOn() && !isMotorOn()) {
+            //-- If gear motor has timed out
+            if (++motor_inc_tries > MAX_TRIES) return -3;
+
+            incrementMainMotor(CLOCKWISE, 5);
+
+            //-- Start gear motor again
+            startGearMotor(1, MEDIUM, 1000);
         }
     }
 
@@ -121,14 +122,15 @@ static int disengageLeft(unsigned int phase) {
         startGearMotor(0, MEDIUM, 1000);
     } else {    //-- RUN_PAWL
 
-        if (!isGearMotorOn()) {
+        if (!isGearMotorOn() && !isMotorOn()) {
+
             //-- If gear motor has timed out
             if (++motor_inc_tries > MAX_TRIES) return -3;
 
             incrementMainMotor(ANTICLOCKWISE, 5);
 
             //-- Start gear motor again
-            startGearMotor(0, MEDIUM, 100);
+            startGearMotor(0, MEDIUM, 1000);
         }
 
         do{
@@ -138,6 +140,8 @@ static int disengageLeft(unsigned int phase) {
 
         if (pawl_left <= LEFT_THRES) {
             stopGearMotor();
+            stopMainMotor();
+            turnOffMotor();
             return 1;
         }
     }
@@ -174,25 +178,15 @@ static int disengageBoth(unsigned int phase) {
 
         motor_inc_tries = 0;
 
-        startGearMotor(dir, MEDIUM, CAM_TIMEOUT);
+        startGearMotor(dir, SLOW, 1000);
 
     } else {    //-- RUN_PAWL
+
 
         if (!isGearMotorOn()) {
             if (++motor_inc_tries > MAX_TRIES) return -3;
 
-            startGearMotor(dir, SUPER_SLOW, CAM_TIMEOUT);
-        }
-
-        //-- If cam value is positive and dir is forward. Reverse
-        if (cam > CAM_MID && dir || cam < CAM_MID && !dir) {
-            stopGearMotor();
-
-            //-- toggle direction
-            dir ^= FORWARD;
-
-            //-- Reverse gear motor
-            startGearMotor(dir, SUPER_SLOW, CAM_TIMEOUT);
+            startGearMotor(dir, SLOW, 1000);
         }
 
         do{
@@ -202,8 +196,24 @@ static int disengageBoth(unsigned int phase) {
 
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
             stopGearMotor();
+
+            //-- Move in the reverse direction to counter-act enertia
+            dir ^= FORWARD;
+            startGearMotor(dir, SLOW, 75);
             return 1;
         }
+
+        //-- If cam value is positive and dir is forward. Reverse
+        if (cam < CAM_MID && dir == BACKWARD || cam > CAM_MID && dir == FORWARD) {
+            stopGearMotor();
+
+            //-- toggle direction
+            dir ^= FORWARD;
+
+            //-- Reverse gear motor
+            startGearMotor(dir, SLOW, 1000);
+        }
+
     }
 
     return 0;

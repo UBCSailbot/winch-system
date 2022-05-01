@@ -152,6 +152,8 @@ static int disengageBoth(void) {
     int motor_inc_tries = 0;
     unsigned int dir = 0;
     unsigned int speed = SLOW;
+    int inc = 0;
+    int speeds[3] = {SLOW, SUPER_SLOW, even_more_slow};
 
     //-- set direction to backward
     dir = BACKWARD;
@@ -174,16 +176,16 @@ static int disengageBoth(void) {
         dir = FORWARD;
     }
 
-    startGearMotor(dir, speed, 100);
+    startGearMotor(dir, speed, 1000);
 
     do {
 
         if (!isGearMotorOn()) {
             if (++motor_inc_tries > MAX_TRIES) return -3;
 
-            speed = SUPER_SLOW;
+            speed = SLOW;
 
-            startGearMotor(dir, SUPER_SLOW, 100);
+            startGearMotor(dir, SLOW, 1000);
         }
 
         //-- If cam value is positive and dir is forward. Reverse
@@ -193,8 +195,10 @@ static int disengageBoth(void) {
             //-- toggle direction
             dir ^= FORWARD;
 
+            inc = (++inc) % 3;
+
             //-- Reverse gear motor
-            startGearMotor(dir, SUPER_SLOW, 100);
+            startGearMotor(dir, speeds[inc], 1000);
         }
 
         do{
@@ -204,10 +208,21 @@ static int disengageBoth(void) {
 
         spi_tries = 0;
 
-    } while (cam > CAM_THRES_UPPER || cam < CAM_THRES_LOWER);
+        __delay_cycles(10000);
 
-    stopGearMotor();
+    } while (cam > CAM_THRES_UPPER || cam < CAM_THRES_LOWER);
     V_PRINTF("CAM: %d\r\n", cam);
+    stopGearMotor();
+    dir ^= FORWARD;
+    startGearMotor(dir, SLOW, 75);
+
+    int i = 0;
+    for (i = 0; i < 5; i++) {
+        err = receive_hallsensors(NULL, &cam, NULL);
+        V_PRINTF("CAM: %d\r\n", cam);
+        //-- 10ms
+        __delay_cycles(10000);
+    }
 
     return 0;
 }
