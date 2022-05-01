@@ -23,9 +23,9 @@
 #define CLOCKWISE 1
 #define ANTICLOCKWISE 2
 
-//-- Counts - 88 Hz PWM
-#define UPPER_COUNT 11364
-#define MID_COUNT 5682
+//-- Counts - 176 Hz PWM
+#define UPPER_COUNT 5682
+#define MID_COUNT 2841
 
 #define POT_SCALAR 11
 #define MAX_MOTOR_TRIES 3
