@@ -12,7 +12,6 @@
 #define REST 0
 #define CLOCKWISE 1
 #define ANTICLOCKWISE 2
-#define ROTATE_CW 3
 
 //-- Gear motor direction
 #define BACKWARD   0
@@ -21,29 +20,28 @@
 //-- Pawl threshold values
 #define RIGHT_THRES 0xfb10
 #define LEFT_THRES  0xf0ff
-#define CAM_THRES_UPPER 200
-#define CAM_THRES_LOWER -500
+#define CAM_THRES_UPPER -200
+#define CAM_THRES_LOWER -400
 
 #define CAM_MID -300
 #define CAM_TIMEOUT 50
 
 #define MAX_TRIES 3
 
-extern int cur_direction;
-extern int GearMotorOn;
+//-- Pawl control Phases
+#define INIT_PAWL   0
+#define RUN_PAWL    1
 
 //-- Move the main pawls depending on the cur_direction
-int move_pawl(void);
+int move_pawl(unsigned int direction, unsigned int phase);
 
 //-- Disengages right pawl by controlling gear motor
-static int disengageRight(void);
+static int disengageRight(unsigned int phase);
 
 //-- Disengages left pawl by controlling gear motor
-static int disengageLeft(void);
+static int disengageLeft(unsigned int phase);
 
 //-- Disengages both pawls by controlling gear motor
-static int disengageBoth(void);
-
-static int test_func(void);
+static int disengageBoth(unsigned int phase);
 
 #endif /* PAWL_H_ */

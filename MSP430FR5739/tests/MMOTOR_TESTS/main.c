@@ -10,8 +10,8 @@
 #define GET_POS    3
 
 //-- CONTROL
-#define TEST_SEL GET_POS
-#define INCREMENT 5
+#define TEST_SEL MOVE_MOTOR
+#define INCREMENT 44
 
 void test_mainMotorIncrement(void);
 void test_mainMotorPosition(void);

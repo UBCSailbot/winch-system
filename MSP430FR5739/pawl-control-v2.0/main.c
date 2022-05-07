@@ -51,10 +51,10 @@ int main(void)
 	            continue;
 	        }
 
-	        if (move_pawl() == 0) {
+	        if ((err = move_pawl()) == 0) {
 	                V_PRINTF("\r\nSUCCESS\r\n");
 	            }else {
-	                V_PRINTF("\r\nFAIL\r\n");
+	                V_PRINTF("\r\nFAIL err: %d \r\n", err);
 	        }
 	        clearReady();
 	    }
