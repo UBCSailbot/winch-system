@@ -42,7 +42,7 @@ int move_pawl(unsigned int direction, unsigned int phase) {
         ret = disengageRight(phase);
         break;
     case REST:
-        ret = disengageBoth(phase);
+        ret = engageBoth(phase);
         break;
 
     }
@@ -149,7 +149,7 @@ static int disengageLeft(unsigned int phase) {
     return 0;
 }
 
-static int disengageBoth(unsigned int phase) {
+static int engageBoth(unsigned int phase) {
     int cam;
     int err;
     unsigned int spi_tries = 0;

@@ -29,7 +29,7 @@
 void handle_commands(void);
 
 //-- Controls statemachine transitions
-static void statemachine(char msg[RXBUF_LEN]);
+static unsigned int get_next_state(void);
 
 //-- Decodes message sent from UCCM and outputs next state
 static int decode_msg(char msg[2]);
