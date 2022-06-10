@@ -4,11 +4,16 @@
 #include "debug.h"
 
 //-- Types of tests
-#define POT_T 1
-#define CONF_T 2
+enum test_type
+{
+    POT_T,
+    CONF_T
+};
+
+//-- SELECT TEST TO BE PERFORMED HERE
+enum test_type test_sel = POT_T;
 
 //-- CONTROL
-#define TEST_SEL POT_T
 #define VERBOSE 1
 
 void test_pot(void);
@@ -24,7 +29,7 @@ int main(void)
 	init_spi();
 	init_UART_DBG();
 
-	switch(TEST_SEL) {
+	switch(test_sel) {
 	case POT_T:
 	    test_pot();
 	    break;

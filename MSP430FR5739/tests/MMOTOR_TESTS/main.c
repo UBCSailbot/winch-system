@@ -5,12 +5,17 @@
 #include "spi.h"
 
 //-- Types of tests
-#define MOVE_MOTOR 1
-#define MOTOR_POS  2
-#define GET_POS    3
+enum test_type
+{
+    MOVE_MOTOR,
+    MOTOR_POS,
+    GET_POS
+};
+
+//-- SELECT TEST TO BE PERFORMED HERE
+enum test_type test_sel = MOVE_MOTOR;
 
 //-- CONTROL
-#define TEST_SEL MOVE_MOTOR
 #define INCREMENT 44
 
 void test_mainMotorIncrement(void);
@@ -32,7 +37,7 @@ int main(void)
 
 	__enable_interrupt();
 
-	switch(TEST_SEL) {
+	switch(test_sel) {
 	case MOVE_MOTOR:
 	    test_mainMotorIncrement();
 	    break;
@@ -77,11 +82,11 @@ void test_mainMotorIncrement(void) {
 
 void test_mainMotorPosition(void) {
     V_PRINTF("TEST main motor position \r\n");
-    int err = setMainMotorPosition(170);
+    int err = setMainMotorPosition(185);
 
     __delay_cycles(1000000);
 
-    setMainMotorPosition(185);
+    setMainMotorPosition(170);
 
     __delay_cycles(1000000);
 
