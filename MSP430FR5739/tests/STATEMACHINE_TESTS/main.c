@@ -36,7 +36,8 @@ int main(void)
 	    break;
 
 	case WATCH_INPUT_MODE:
-        #define ECHO_UART
+	    V_PRINTF("WATCH_INPUT_MODE TEST \r\n");
+	    switch_to_echo_mode();
 	    break;
 
 	default:

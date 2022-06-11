@@ -16,6 +16,7 @@ volatile int rx_flag = 0;
 char rxbuf[RXBUF_LEN] = "";
 size_t bufpos = 0;
 static size_t uart_state  = READ;
+int ECHO_UART = 0;
 
 
 void init_uart(void) {
@@ -111,6 +112,10 @@ static void update_buffer(char c) {
 
 }
 
+void switch_to_echo_mode(void) {
+    ECHO_UART = 1;
+}
+
 //-- USCI_A1 interrupt ISR
 #pragma vector = USCI_A1_VECTOR
 __interrupt void USCI_A1_ISR(void) {
@@ -122,11 +127,8 @@ __interrupt void USCI_A1_ISR(void) {
     case 0x02: // Vector 2: UCRXIFG
         c = UCA1RXBUF;
 
-#ifdef ECHO_UART
-        UCA1TXBUF = c;
-#else
-        update_buffer(c);
-#endif
+        if( ECHO_UART ) UCA1TXBUF = c;
+        else update_buffer(c);
         break;
     case 0x03: // Vector 4: UCTXIFG
         break;

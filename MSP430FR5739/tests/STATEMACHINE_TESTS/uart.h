@@ -34,7 +34,7 @@ void clearReady(void);
 //-- Receive command from rxbuffer
 void getMsg(char* msg);
 
-
+void switch_to_echo_mode(void);
 
 
 #endif /* UART_H_ */

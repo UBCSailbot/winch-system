@@ -10,8 +10,6 @@
 #include "debug.h"
 #include "uart.h"
 
-#undef ECHO_UART
-
 void dbg_printf(const char *format, ...) {
     va_list args;
     char str[50] = "";
