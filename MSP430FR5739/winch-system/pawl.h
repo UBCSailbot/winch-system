@@ -41,7 +41,7 @@ static int disengageRight(unsigned int phase);
 //-- Disengages left pawl by controlling gear motor
 static int disengageLeft(unsigned int phase);
 
-//-- Disengages both pawls by controlling gear motor
-static int disengageBoth(unsigned int phase);
+//-- Engages both pawls by controlling gear motor
+static int engageBoth(unsigned int phase);
 
 #endif /* PAWL_H_ */

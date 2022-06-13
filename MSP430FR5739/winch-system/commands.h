@@ -23,8 +23,8 @@
 
 
 typedef struct cmd {
-    int type;
-    int cont_state;
+    unsigned int type;
+    unsigned int cont_state;
     unsigned int data1;     // SetPoint
     unsigned int data2;     // Direction
     unsigned int msg;       // UCCM MSG
