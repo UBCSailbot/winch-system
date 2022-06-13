@@ -6,11 +6,15 @@
 #include "uart.h"
 
 //-- Types of tests
-#define MOVE_TIME_T 1
-#define SPI_DATA_T 2
+enum test_type
+{
+    MOVE_TIME_T,
+    MOVE_SPI_DATA_T
+};
 
-//-- CONTROL
-#define TEST_SEL SPI_DATA_T
+//-- SELECT TEST TO BE PERFORMED HERE
+enum test_type test_sel = MOVE_TIME_T;
+
 
 #define DELAY 3500000
 #define SPEED_SEL 1     //-- Slow: 0 Medium: 1 Fast: 2
@@ -32,11 +36,11 @@ int main(void)
 
     __enable_interrupt();
 
-    switch(TEST_SEL) {
+    switch(test_sel) {
     case MOVE_TIME_T:
         test_motorMovementTimeout();
         break;
-    case SPI_DATA_T:
+    case MOVE_SPI_DATA_T:
         test_receiveSPI();
         break;
     }

@@ -23,7 +23,9 @@ Note:
 2. 16 SCLK cycles are required to read a complete sample from the ADC.
 3. Pull CS high after receiving 16 bits
 
-## Tests
+## Running tests
 
-- [x] test_pot - Gets potentiometer data through SPI
-- [x] test_hallConfig - Configures and verifies that the ADC was configured
+Tests can be selected by changing the test_sel variable to any of the defined tests below:
+
+- POT_T - Gets potentiometer data through SPI
+- CONF_T - Configures and verifies that the ADC was configured

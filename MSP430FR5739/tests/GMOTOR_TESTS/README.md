@@ -5,7 +5,9 @@
 - Three diffirent speed modes - FAST (90% duty), MEDIUM (50% duty) and SLOW (20% duty)
 - Option for a motor timeout period
 
-## Tests
+## Running tests
 
-- [x] motorMovementTimeout - Moves motor in left and right direction with a specified timeout input
-- [x] test_receiveSPI - Moves the motor and gets SPI data. Log in SPI_log.txt file
+Tests can be selected by changing the test_sel variable to any of the defined tests below:
+
+- MOVE_TIME_T - Moves the gear motor using timer delays
+- MOVE_SPI_DATA_T - Moves the gear motor using spi data
