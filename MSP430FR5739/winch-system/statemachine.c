@@ -13,16 +13,22 @@
 #include "debug.h"
 //-- #include "uart.h" in statemachine.h
 
-unsigned int state = IDLE;
+unsigned int state;
+unsigned int interrupts;
 t_cmd * cur_cmd;
 
 void handle_commands(void) {
     char msg[RXBUF_LEN] = "";
+    interrupts = INTERRUPT_MASK;
+    state = IDLE;
 
     while (1) {
 
+        //-- If no new messages continue to whatever state we should be in
+        state = get_next_state();
+
         //-- Check if we have an incoming message from the UCCM
-        if (isReady()) {
+        if (isReady() && interrupts) {
 
             //-- We only need to process this if we havn't reached our maximum capacity
             if (!max_active_reached()) {
@@ -38,13 +44,9 @@ void handle_commands(void) {
 
             //-- We ignore the rx_ready flag if max active threshold has been reached
             clearReady();
-        } else {
-
-            //-- If no new messages continue to whatever state we should be in
-            state = get_next_state();
         }
 
-        //-- 100 Hz
+        //-- 100 Hz TODO: USE TIMER MODULE
         __delay_cycles(10000);
     }
 }
@@ -176,6 +178,9 @@ static unsigned int get_next_state(void) {
         //-- Removes current command from the list
         end_command();
 
+        //-- Reset interrupt for instances when it is disabled
+        interrupts |= INTERRUPT_MASK;
+
         //-- If we have another command resume otherwise go to IDLE
         if (is_command_available()) {
 
@@ -230,6 +235,7 @@ static int decode_msg(char msg[2]) {
             next_state = START_PAWL;
         } else {
             next_state = SEND_TO_UCCM;
+            interrupts &= ~INTERRUPT_MASK;
         }
 
         //-- Sets data1 - pos data2 - dir and uccm_msg - pos. If busy then the command is automatically set to busy
@@ -239,6 +245,9 @@ static int decode_msg(char msg[2]) {
     case 0x02:        // QUERY_POS
 
         err = getCurrentPosition(&pos);
+
+        //-- We want to disable interrupts because we don't want busy commands to be interrupted
+        if (is_busy(QUERY_POS)) interrupts &= ~INTERRUPT_MASK;
 
         //-- data1: 0, data2: 0, uccm_msg: pot. If busy then command is set to busy type
         cur_cmd = new_command(QUERY_POS, 0, 0,pos);
@@ -255,6 +264,9 @@ static int decode_msg(char msg[2]) {
         //-- We need to clear all current commands that are running so we do not return to them after
         clear_all_commands();
 
+        //-- Interrupts are always disabled for stop and lock
+        interrupts &= ~INTERRUPT_MASK;
+
         cur_cmd = new_command(STOPLOCK, 0, 0,0x6);
 
         next_state = ABORT;
@@ -262,12 +274,18 @@ static int decode_msg(char msg[2]) {
 
     case 0x04:        // ALIVE
 
+        //-- We want to disable interrupts because we don't want busy commands to be interrupted
+        if (is_busy(ALIVE)) interrupts &= ~INTERRUPT_MASK;
+
         cur_cmd = new_command(ALIVE, 0, 0,  0x5555);
 
         next_state = SEND_TO_UCCM;
         break;
 
     default:            // UNDEF
+
+        //-- We want to disable interrupts because we don't want busy commands to be interrupted
+        if (is_busy(UNDEF)) interrupts &= ~INTERRUPT_MASK;
 
         cur_cmd = new_command(UNDEF, 0, 0,  0xFF00);
 
@@ -310,4 +328,6 @@ static int abort_action(void) {
 
    return 0;
 }
+
+
 

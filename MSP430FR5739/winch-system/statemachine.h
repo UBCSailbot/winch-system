@@ -24,6 +24,8 @@
 #define ABORT               8
 #define SEND_TO_UCCM        9
 
+#define INTERRUPT_MASK       1
+
 
 //-- Receive commands from the uccm. top level state machine
 void handle_commands(void);
