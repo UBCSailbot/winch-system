@@ -59,6 +59,7 @@ static unsigned int get_next_state(void) {
 
     case IDLE:
         /*  DO NOTHING */
+        interrupts |= INTERRUPT_MASK;
         break;
 
     case DECODE:
@@ -68,8 +69,8 @@ static unsigned int get_next_state(void) {
     //-- SET_POS --//
     case START_PAWL:
 
-        //-- Initialize Pawl data2 -> direction
-        ret_val = move_pawl(cur_cmd->data2, INIT_PAWL);
+        //-- Initialize Phase
+        ret_val = move_pawl(INIT_PAWL);
         if (ret_val < 0) {
 
             //-- ERROR
@@ -83,8 +84,8 @@ static unsigned int get_next_state(void) {
 
     case WAIT_PAWL:
 
-        //-- Run pawl until action is complete data2 -> direction. Action complete - 1, Run again - 0, Error - < 0
-        ret_val = move_pawl(cur_cmd->data2, RUN_PAWL);
+        //-- Run pawl until action is complete. Action complete - 1, Run again - 0, Error - < 0
+        ret_val = move_pawl(RUN_PAWL);
         if (ret_val < 0) {
 
             //-- ERROR
@@ -99,7 +100,7 @@ static unsigned int get_next_state(void) {
     case START_MOTOR:
 
         //-- Initialize motor functions data1 -> Position, data2 -> Direction
-        ret_val = setMainMotorPosition(cur_cmd->data1, &cur_cmd->data2, INIT_MMOTOR);
+        ret_val = setMainMotorPosition(INIT_MMOTOR);
         if (ret_val < 0) {
 
             //-- ERROR
@@ -114,7 +115,7 @@ static unsigned int get_next_state(void) {
     case WAIT_MOTOR:
 
         //-- Run motor until action is complete data1 -> Position, data2 -> Direction. Action complete - 1, Run again - 0, Error < 0
-        ret_val = setMainMotorPosition(cur_cmd->data1, &cur_cmd->data2, RUN_MMOTOR);
+        ret_val = setMainMotorPosition(RUN_MMOTOR);
         if (ret_val < 0) {
 
             //-- ERROR
@@ -133,7 +134,7 @@ static unsigned int get_next_state(void) {
     case START_ENGAGE_PAWL:
 
         //-- Initialize Pawls to engage
-        ret_val = move_pawl(REST, INIT_PAWL);
+        ret_val = engageBoth(INIT_PAWL);
         if (ret_val < 0) {
 
             //-- ERROR
@@ -148,7 +149,7 @@ static unsigned int get_next_state(void) {
     case WAIT_ENGAGE_PAWL:
 
         //-- Run pawl control until both engaged. Action complete - 1, Run again - 0, Error < 0
-        ret_val = move_pawl(REST, RUN_PAWL);
+        ret_val = engageBoth(RUN_PAWL);
         if (ret_val < 0) {
 
             //-- ERROR
@@ -211,7 +212,7 @@ static unsigned int get_next_state(void) {
  *      - ACTION_BUSY
  */
 static int decode_msg(char msg[2]) {
-    unsigned int pos, dir;
+    unsigned int pos, setpos;
     int err;
     unsigned int next_state = IDLE;
 
@@ -224,37 +225,33 @@ static int decode_msg(char msg[2]) {
         if (!is_busy(SET_POS)) {
 
             //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
-            pos = ((int)msg[0] & 0x1) << 8 | msg[1];
+            setpos = ((int)msg[0] & 0x1) << 8 | msg[1];
 
-            err = getDirection(pos, &dir);
+            if (setpos > 360) {
+                next_state = ABORT;
+            }
+
+            err = setDirectionToMove(setpos);
 
             if (err < 0) {
-                //-- TODO: Do something?
+                next_state = ABORT;
             }
 
             next_state = START_PAWL;
         } else {
             next_state = SEND_TO_UCCM;
-            interrupts &= ~INTERRUPT_MASK;
         }
 
-        //-- Sets data1 - pos data2 - dir and uccm_msg - pos. If busy then the command is automatically set to busy
-        cur_cmd = new_command(SET_POS, pos, dir, pos);
+        //-- Set UCCM_msg - pos. If busy then the command is automatically set to busy
+        cur_cmd = new_command(SET_POS, setpos);
         break;
 
     case 0x02:        // QUERY_POS
 
-        err = getCurrentPosition(&pos);
-
-        //-- We want to disable interrupts because we don't want busy commands to be interrupted
-        if (is_busy(QUERY_POS)) interrupts &= ~INTERRUPT_MASK;
+        pos = getCurrentCachedPosition();
 
         //-- data1: 0, data2: 0, uccm_msg: pot. If busy then command is set to busy type
-        cur_cmd = new_command(QUERY_POS, 0, 0,pos);
-
-        if (err < 0) {
-            //-- TODO: Error check
-        }
+        cur_cmd = new_command(QUERY_POS, pos);
 
         next_state = SEND_TO_UCCM;
         break;
@@ -267,31 +264,29 @@ static int decode_msg(char msg[2]) {
         //-- Interrupts are always disabled for stop and lock
         interrupts &= ~INTERRUPT_MASK;
 
-        cur_cmd = new_command(STOPLOCK, 0, 0,0x6);
+        cur_cmd = new_command(STOPLOCK, 0x6);
 
         next_state = ABORT;
         break;
 
     case 0x04:        // ALIVE
 
-        //-- We want to disable interrupts because we don't want busy commands to be interrupted
-        if (is_busy(ALIVE)) interrupts &= ~INTERRUPT_MASK;
-
-        cur_cmd = new_command(ALIVE, 0, 0,  0x5555);
+        cur_cmd = new_command(ALIVE, 0x5555);
 
         next_state = SEND_TO_UCCM;
         break;
 
     default:            // UNDEF
 
-        //-- We want to disable interrupts because we don't want busy commands to be interrupted
-        if (is_busy(UNDEF)) interrupts &= ~INTERRUPT_MASK;
-
-        cur_cmd = new_command(UNDEF, 0, 0,  0xFF00);
+        cur_cmd = new_command(UNDEF, 0xFF00);
 
         next_state = SEND_TO_UCCM;
         break;
     }
+
+    //-- If the current command is busy then we don't want it to be interrupted
+    if (cur_cmd->type == ACTION_BUSY) interrupts &= ~INTERRUPT_MASK;
+
     return next_state;
 }
 
@@ -305,14 +300,14 @@ static int abort_action(void) {
    stopMainMotor();
 
     //-- Engage pawl
-   err = move_pawl(REST, INIT_PAWL);
+   err = engageBoth(INIT_PAWL);
    if (err < 0) {
        return -1;
    }
 
    //-- Perform this function until either error or returns 1
    do {
-       err = move_pawl(REST, RUN_PAWL);
+       err = engageBoth(RUN_PAWL);
 
        //-- If there something is wrong error
        if (err < 0) {
