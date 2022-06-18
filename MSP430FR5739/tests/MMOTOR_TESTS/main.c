@@ -31,6 +31,8 @@ int main(void)
 	
 	init_uart();
 	init_spi();
+
+	//-- Always the last one to initialize
 	init_Main_Motor();
 
 	V_PRINTF("MAIN \r\n");
@@ -82,15 +84,16 @@ void test_mainMotorIncrement(void) {
 
 void test_mainMotorPosition(void) {
     V_PRINTF("TEST main motor position \r\n");
-    int err = setMainMotorPosition(185);
+
+    int err = moveToPosition(185);
 
     __delay_cycles(1000000);
 
-    setMainMotorPosition(170);
+    err = moveToPosition(170);
 
     __delay_cycles(1000000);
 
-    setMainMotorPosition(200);
+    err = moveToPosition(200);
 
     __delay_cycles(1000000);
 
@@ -99,7 +102,8 @@ void test_mainMotorPosition(void) {
 
 void test_getCurrentPosition(void) {
     while (1) {
-        V_PRINTF("Current Position: %d\r\n", getCurrentPosition());
+        setCurrentPosition();
+        V_PRINTF("Current Position: %d\r\n", motor_stat.position);
 
         //-- delay one sec
         __delay_cycles(1000000);

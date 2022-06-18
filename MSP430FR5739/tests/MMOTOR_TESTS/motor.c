@@ -9,8 +9,7 @@
 #include "spi.h"
 
 int motor_increment;
-volatile int motor_state;
-
+unsigned int motor_tries = 0;
 
 /**
  * P2.2 DIR: 1 forward and 0 backward TODO: confirm
@@ -20,7 +19,12 @@ volatile int motor_state;
 void init_Main_Motor(void) {
 
     motor_increment = 0;
-    motor_state = OFF;
+
+    //-- Fill initial value in motor status struct
+    motor_stat.power = OFF;
+    motor_stat.position = 0;
+    motor_stat.direction = REST;
+    motor_stat.setpoint = 180;
 
     //-- Init DIR port to output
     P2DIR |= DIR;
@@ -42,17 +46,20 @@ void init_Main_Motor(void) {
     //-- Enable port that is connected to input 4 on the motor controller
     P1DIR |= ON_MOTOR;
     P1OUT &= ~ON_MOTOR;
+
+    //-- THIS ONLY WORKS IF init_Main_Motor is called after init_spi
+    setCurrentPosition();
 }
 
-int incrementMainMotor(int direction, int increment) {
+int incrementMainMotor(int dir, int increment) {
     //-- Set DIR pin
-    switch(direction) {
+    switch(dir) {
     case CLOCKWISE:
-        P2OUT |= DIR;
+        P2OUT &= ~DIR;
         break;
 
     case ANTICLOCKWISE:
-        P2OUT &= ~DIR;
+        P2OUT |= DIR;
         break;
 
     default:
@@ -67,84 +74,84 @@ int incrementMainMotor(int direction, int increment) {
     TB1CTL |= TBCLR;                // Clear timer count
     TB1CTL |= MC_1;                 // Count up mode
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
-    motor_state = ON;
+    motor_stat.power = ON;
 
     TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
 
+    //-- Wait until the increment is over
+    while (TB1CTL & MC_1);
+
     return 0;
 }
+
 /**
  * Rotates the main motor in the direction indicated by the
  * global state
  *
- * Returns -1 when error and 0 otherwise
+ * Returns -1 when error and 0 when success and 1 if motor has reached setpoint
  */
-int setMainMotorPosition(int position) {
-    int direction;
-    unsigned int voltage;
-    int err;
-    int setpoint;
-    int tries = 0;
+int setMainMotorPosition(unsigned int phase) {
+    int ret;
 
-    setpoint = (position * POT_SCALAR) + 500;
+    if (phase == INIT_MMOTOR) {
 
-    if (position > 360 || position < 0) return -1;
+        if (motor_stat.setpoint > 360) return -1;
 
-    //-- Receive Pot voltage and determine the direction
-    err = receive_potentiometer(&voltage);
-    if (err < 0) return -2;
+        //err = setDirectionToMove(motor_stat.setpoint);
 
-    if (voltage == setpoint) {
-        //-- Position Reached
-        return -3;
-    } else {
-        direction = voltage < setpoint ? ANTICLOCKWISE : CLOCKWISE;
-    }
+        //-- Set DIR pin
+        switch(motor_stat.direction) {
+        case CLOCKWISE:
+            P2OUT &= ~DIR;
+            break;
 
-    //-- Set DIR pin
-    switch(direction) {
-    case CLOCKWISE:
-        P2OUT |= DIR;
-        break;
+        case ANTICLOCKWISE:
+            P2OUT |= DIR;
+            break;
 
-    case ANTICLOCKWISE:
-        P2OUT &= ~DIR;
-        break;
+        case REST:
+            //-- Already at position
+            return 1;
 
-    default:
-        return -4;  // Action not completed
-    }
-
-    //-- Enable motor through motor controller
-    P1OUT |= ON_MOTOR;
-
-    TB1CTL |= TBCLR;                // Clear timer count
-    TB1CTL |= MC_1;                 // Count up mode
-    TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
-    motor_state = ON;
-
-    /*
-     * Receive potentiometer voltage. Stop motor when setpoint reached
-     * Get data at 1kHz frequency
-     */
-    do {
-        err = receive_potentiometer(&voltage);
-        if (err < 0) return -2;
-
-        if (direction == CLOCKWISE && voltage < setpoint || direction == ANTICLOCKWISE && voltage > setpoint) {
-            //-- Toggle the DIR pin
-            P2OUT ^= DIR;
-
-            //-- Toggle the direction
-            direction ^= CLOCKWISE ^ ANTICLOCKWISE;
-
-            if (++tries > MAX_MOTOR_TRIES) return -5;
+        default:
+            return -4;  // Action not completed
         }
 
-        __delay_cycles(1000); // 1kHz freq
-    }while (voltage != setpoint);
+        //-- Init the tries to 0
+        motor_tries = 0;
 
-    stopMainMotor();
+        turnOnMotor();
+
+        //-- Starts the PWM timer
+        TB1CTL |= TBCLR;                // Clear timer count
+        TB1CTL |= MC_1;                 // Count up mode
+        TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
+
+    } else {    // PHASE == RUN_MMOTOR
+
+        ret = setDirectionToMove(motor_stat.setpoint);
+        if (ret < 0) return -2;
+
+        if (motor_stat.direction == REST) {
+
+            //-- This stops it from moving in the specified direction
+            stopMainMotor();
+
+            //-- We don't want to power off the motor as it should retain its position until pawls are engaged
+            //turnOffMotor();
+            return 1;
+        }
+
+        // If the direction changed move back to Start Pawl
+        if (ret == 1) {
+
+            //-- This stops it from moving in the specified direction (Motor still powered)
+            stopMainMotor();
+
+            return 2;
+            //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
+        }
+    }
 
     return 0;
 }
@@ -152,25 +159,98 @@ int setMainMotorPosition(int position) {
 void stopMainMotor(void) {
     TB1CTL &= ~MC_1;        // Hault PWM timer
     TB1CTL |= TBCLR;        // Clear timer count
-    P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
 
     TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode
     TB1CCTL1 &= ~OUT;        // Force output to zero
-    motor_state = OFF;
+}
+
+void turnOnMotor(void) {
+    P1OUT |= ON_MOTOR;
+    motor_stat.power = ON;
+}
+
+void turnOffMotor(void) {
+    P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
+    motor_stat.power = OFF;
 }
 
 int isMotorOn(void) {
-    return motor_state;
+    return motor_stat.power;
 }
 
-unsigned int getCurrentPosition(void) {
+unsigned int getCurrentCachedPosition(void) {
+    return motor_stat.position;
+}
+
+int setCurrentPosition(void) {
     unsigned int voltage;
+    unsigned int position;
     int err;
 
     err = receive_potentiometer(&voltage);
     if (err) return err;
 
-    return (unsigned int) (voltage - 500)/POT_SCALAR;
+    position = (unsigned int) ( (voltage - 500)/POT_SCALAR );
+
+    if (position > 360) return -1;
+
+    motor_stat.position = position;
+
+    return 0;
+}
+
+unsigned int getCurrentCachedDirection(void) {
+    return motor_stat.direction;
+}
+
+/**
+ * This function is used to figure out what direction the motor should move
+ * It changes it the motor status to reflect the calculated direction
+ *
+ * return < 0 when error
+ *          0 when action is successful and direction to move to did not change
+ *          1 when action is successful and direction to move to changed
+ */
+
+unsigned int setDirectionToMove(unsigned int setpoint) {
+    int err;
+    unsigned int temp_direction;
+
+    temp_direction = motor_stat.direction;
+
+    motor_stat.setpoint = setpoint;
+
+    err = setCurrentPosition();
+    if (err) return err;
+
+    if (motor_stat.position == setpoint) {
+        //-- Position Reached
+        motor_stat.direction = REST;
+    } else {
+        motor_stat.direction = motor_stat.position < setpoint ? CLOCKWISE : ANTICLOCKWISE;
+    }
+
+    return temp_direction != motor_stat.direction;
+}
+
+int moveToPosition(unsigned int setpoint) {
+    int err;
+
+    err = setDirectionToMove(setpoint);
+    if (err) return err;
+
+    err = setMainMotorPosition(INIT_MMOTOR);
+    if (err) return err;
+
+    while ( setMainMotorPosition(RUN_MMOTOR) != 1 ) {
+
+        //-- 200 Hz
+        __delay_cycles(5000);
+    }
+
+    __delay_cycles(200000);
+
+    turnOffMotor();
 }
 
 
@@ -181,6 +261,9 @@ __interrupt void TIMER1_B0_ISR (void) {
     if (motor_increment <= 0) {
         TB1CCTL0 &= ~CCIE;  // Disable interrupts
         stopMainMotor();
+
+        //-- Do not turn power off to the motor because it needs to retain its position
+        //turnOffMotor();
         motor_increment = 0;
     } else {
         motor_increment--;
