@@ -25,18 +25,6 @@ enum States {
     ABORT,
     SEND_TO_UCCM,
 };
-//#define IDLE                0
-//#define DECODE              1
-//
-//#define START_PAWL          2
-//#define WAIT_PAWL           3
-//#define START_MOTOR         4
-//#define WAIT_MOTOR          5
-//#define START_ENGAGE_PAWL   6
-//#define WAIT_ENGAGE_PAWL    7
-//
-//#define ABORT               8
-//#define SEND_TO_UCCM        9
 
 #define INTERRUPT_MASK       1
 

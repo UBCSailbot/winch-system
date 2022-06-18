@@ -71,6 +71,8 @@ enum States get_next_state(void) {
         //-- Before we disengage the pawls we want to turn on the motor to retain its position
         turnOnMotor();
 
+        interrupts &= ~INTERRUPT_MASK;  // TEST
+
         next_state = START_PAWL;
         break;
 
@@ -82,7 +84,7 @@ enum States get_next_state(void) {
         if (ret_val < 0) {
 
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: program an error lookup
+            set_uccm_msg(0xFF);    //TODO: program an error lookup
             next_state = ABORT;
         } else {
 
@@ -97,7 +99,7 @@ enum States get_next_state(void) {
         if (ret_val < 0) {
 
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_uccm_msg(0xFF);    //TODO: Build a error lookup
             next_state = ABORT;
         } else if (ret_val == 1){
 
@@ -107,12 +109,14 @@ enum States get_next_state(void) {
 
     case START_MOTOR:
 
+        interrupts |= INTERRUPT_MASK;   // TEST
+
         //-- Initialize motor functions data1 -> Position, data2 -> Direction
         ret_val = setMainMotorPosition(INIT_MMOTOR);
         if (ret_val < 0) {
 
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_uccm_msg(0xFF);    //TODO: Build a error lookup
             next_state = ABORT;
         } else{
 
@@ -127,7 +131,7 @@ enum States get_next_state(void) {
         if (ret_val < 0) {
 
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_uccm_msg(0xFF);    //TODO: Build a error lookup
             next_state = ABORT;
         } else if (ret_val == 2) {
 
@@ -141,12 +145,14 @@ enum States get_next_state(void) {
 
     case START_ENGAGE_PAWL:
 
+        interrupts &= ~INTERRUPT_MASK;  // TEST
+
         //-- Initialize Pawls to engage
         ret_val = engageBoth(INIT_PAWL);
         if (ret_val < 0) {
 
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_uccm_msg(0xFF);    //TODO: Build a error lookup
             next_state = ABORT;
         } else {
 
@@ -161,7 +167,7 @@ enum States get_next_state(void) {
         if (ret_val < 0) {
 
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_uccm_msg(0xFF);    //TODO: Build a error lookup
             next_state = ABORT;
         } else if (ret_val == 1){
 
@@ -170,6 +176,9 @@ enum States get_next_state(void) {
         break;
 
     case TURN_MOTOR_OFF:
+
+        interrupts |= INTERRUPT_MASK;   // TEST
+
         turnOffMotor();
         next_state = SEND_TO_UCCM;
         break;
