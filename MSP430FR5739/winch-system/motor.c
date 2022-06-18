@@ -79,7 +79,7 @@ int incrementMainMotor(int dir, int increment) {
     TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
 
     //-- Wait until the increment is over
-    while (isMotorOn());
+    while (TB1CTL & MC_1);
 
     return 0;
 }
@@ -132,16 +132,6 @@ int setMainMotorPosition(unsigned int phase) {
         ret = setDirectionToMove(motor_stat.setpoint);
         if (ret < 0) return -2;
 
-        // If the direction changed move back to Start Pawl
-        if (ret == 1) {
-
-            //-- This stops it from moving in the specified direction (Motor still powered)
-            stopMainMotor();
-
-            return 2;
-            //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
-        }
-
         if (motor_stat.direction == REST) {
 
             //-- This stops it from moving in the specified direction
@@ -150,6 +140,16 @@ int setMainMotorPosition(unsigned int phase) {
             //-- We don't want to power off the motor as it should retain its position until pawls are engaged
             //turnOffMotor();
             return 1;
+        }
+
+        // If the direction changed move back to Start Pawl
+        if (ret == 1) {
+
+            //-- This stops it from moving in the specified direction (Motor still powered)
+            stopMainMotor();
+
+            return 2;
+            //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
         }
     }
 
@@ -230,7 +230,7 @@ unsigned int setDirectionToMove(unsigned int setpoint) {
         motor_stat.direction = motor_stat.position < setpoint ? CLOCKWISE : ANTICLOCKWISE;
     }
 
-    return temp_direction == motor_stat.position;
+    return temp_direction != motor_stat.direction;
 }
 
 
@@ -241,7 +241,9 @@ __interrupt void TIMER1_B0_ISR (void) {
     if (motor_increment <= 0) {
         TB1CCTL0 &= ~CCIE;  // Disable interrupts
         stopMainMotor();
-        turnOffMotor();
+
+        //-- Do not turn power off to the motor because it needs to retain its position
+        //turnOffMotor();
         motor_increment = 0;
     } else {
         motor_increment--;
