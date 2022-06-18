@@ -71,13 +71,13 @@ enum States get_next_state(void) {
         //-- Before we disengage the pawls we want to turn on the motor to retain its position
         turnOnMotor();
 
-        interrupts &= ~INTERRUPT_MASK;  // TEST
-
         next_state = START_PAWL;
         break;
 
     //-- SET_POS --//
     case START_PAWL:
+
+        interrupts &= ~INTERRUPT_MASK;  // TEST
 
         //-- Initialize Phase
         ret_val = move_pawl(INIT_PAWL);
