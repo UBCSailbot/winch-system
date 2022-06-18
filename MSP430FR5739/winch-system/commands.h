@@ -24,7 +24,7 @@
 
 typedef struct cmd {
     unsigned int type;
-    unsigned int cont_state;
+    enum States cont_state;
     unsigned int msg;       // UCCM MSG
 
 }t_cmd;
@@ -55,7 +55,7 @@ void clear_active_commands(void);
 //-- GETERS and SETTERS --
 
 //-- Saves the current state of the command in its structure
-void save_current_state(unsigned int state);
+void save_current_state(enum States state);
 
 //-- Set the values for the data variable in the command structure
 void set_uccm_msg(unsigned int uccm_msg);
@@ -102,7 +102,7 @@ unsigned int is_command_available(void) {
     return !(cmd_index < 0);
 }
 
-void save_current_state(unsigned int state) {
+void save_current_state(enum States state) {
     t_cmd * cur_cmd = get_current_command();
     if (cur_cmd != (t_cmd*)0) {
         cur_cmd->cont_state = state;

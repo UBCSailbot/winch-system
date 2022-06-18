@@ -11,18 +11,32 @@
 #include "uart.h"
 
 //-- StateMachine states
-#define IDLE                0
-#define DECODE              1
-
-#define START_PAWL          2
-#define WAIT_PAWL           3
-#define START_MOTOR         4
-#define WAIT_MOTOR          5
-#define START_ENGAGE_PAWL   6
-#define WAIT_ENGAGE_PAWL    7
-
-#define ABORT               8
-#define SEND_TO_UCCM        9
+enum States {
+    IDLE,
+    DECODE,
+    TURN_MOTOR_ON,
+    START_PAWL,
+    WAIT_PAWL,
+    START_MOTOR,
+    WAIT_MOTOR,
+    START_ENGAGE_PAWL,
+    WAIT_ENGAGE_PAWL,
+    TURN_MOTOR_OFF,
+    ABORT,
+    SEND_TO_UCCM,
+};
+//#define IDLE                0
+//#define DECODE              1
+//
+//#define START_PAWL          2
+//#define WAIT_PAWL           3
+//#define START_MOTOR         4
+//#define WAIT_MOTOR          5
+//#define START_ENGAGE_PAWL   6
+//#define WAIT_ENGAGE_PAWL    7
+//
+//#define ABORT               8
+//#define SEND_TO_UCCM        9
 
 #define INTERRUPT_MASK       1
 
@@ -31,10 +45,10 @@
 void handle_commands(void);
 
 //-- Controls statemachine transitions
-static unsigned int get_next_state(void);
+enum States get_next_state(void);
 
 //-- Decodes message sent from UCCM and outputs next state
-static int decode_msg(char msg[2]);
+enum States decode_msg(char msg[2]);
 
 //-- Abort functionality. Hault main motor, Engages pawl
 static int abort_action(void);

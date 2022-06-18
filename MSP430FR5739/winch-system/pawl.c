@@ -61,11 +61,6 @@ static int disengageRight(unsigned int phase) {
 
     if (phase == INIT_PAWL) {
 
-        //-- If the main motor is on do not continue
-        if (isMotorOn()) {
-            return -1;
-        }
-
         motor_inc_tries = 0;
 
         //-- Turn the motor on until it reaches
@@ -104,11 +99,6 @@ static int disengageLeft(unsigned int phase) {
     int err;
 
     if (phase == INIT_PAWL) {
-
-        //-- If the main motor is on do not continue
-        if (isMotorOn()) {
-            return -1;
-        }
 
         motor_inc_tries = 0;
 

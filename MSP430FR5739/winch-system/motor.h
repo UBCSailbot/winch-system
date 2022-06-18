@@ -58,8 +58,13 @@ int incrementMainMotor(int direction, int increment);
 //-- Hault motor operation
 void stopMainMotor(void);
 
+//-- Turns on power to the motor
+void turnOnMotor(void);
+
+//-- Turns off power to the motor
 void turnOffMotor(void);
 
+//-- Checks if the motor is On
 int isMotorOn(void);
 
 // Sets the current motor_stat.position value, Error if calculated value not between 0-360

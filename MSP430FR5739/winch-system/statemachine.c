@@ -13,7 +13,7 @@
 #include "debug.h"
 //-- #include "uart.h" in statemachine.h
 
-unsigned int state;
+enum States state;
 unsigned int interrupts;
 t_cmd * cur_cmd;
 
@@ -51,9 +51,9 @@ void handle_commands(void) {
     }
 }
 
-static unsigned int get_next_state(void) {
+enum States get_next_state(void) {
     int ret_val = 0;
-    unsigned int next_state;
+    enum States next_state;
 
     switch(state) {
 
@@ -64,6 +64,14 @@ static unsigned int get_next_state(void) {
 
     case DECODE:
         /* State should never be decode as it is done right after receiving a UCCM msg */
+        break;
+
+    case TURN_MOTOR_ON:
+
+        //-- Before we disengage the pawls we want to turn on the motor to retain its position
+        turnOnMotor();
+
+        next_state = START_PAWL;
         break;
 
     //-- SET_POS --//
@@ -157,8 +165,13 @@ static unsigned int get_next_state(void) {
             next_state = ABORT;
         } else if (ret_val == 1){
 
-            next_state = SEND_TO_UCCM;
+            next_state = TURN_MOTOR_OFF;
         }
+        break;
+
+    case TURN_MOTOR_OFF:
+        turnOffMotor();
+        next_state = SEND_TO_UCCM;
         break;
 
     case ABORT:
@@ -211,10 +224,10 @@ static unsigned int get_next_state(void) {
  *      - UNDEF
  *      - ACTION_BUSY
  */
-static int decode_msg(char msg[2]) {
+enum States decode_msg(char msg[2]) {
     unsigned int pos, setpos;
     int err;
-    unsigned int next_state = IDLE;
+    enum States next_state = IDLE;
 
     // The first bytes xxxx_xxx0 ignoring the least significant bit is the identifier
     switch((int) (msg[0]) >> 1) {
@@ -237,7 +250,7 @@ static int decode_msg(char msg[2]) {
                 next_state = ABORT;
             }
 
-            next_state = START_PAWL;
+            next_state = TURN_MOTOR_ON;
         } else {
             next_state = SEND_TO_UCCM;
         }

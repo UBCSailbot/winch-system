@@ -83,6 +83,7 @@ int incrementMainMotor(int dir, int increment) {
 
     return 0;
 }
+
 /**
  * Rotates the main motor in the direction indicated by the
  * global state
@@ -119,13 +120,12 @@ int setMainMotorPosition(unsigned int phase) {
         //-- Init the tries to 0
         motor_tries = 0;
 
-        //-- Enable motor through motor controller
-        P1OUT |= ON_MOTOR;
+        turnOnMotor();
 
+        //-- Starts the PWM timer
         TB1CTL |= TBCLR;                // Clear timer count
         TB1CTL |= MC_1;                 // Count up mode
         TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
-        motor_stat.power = ON;
 
     } else {    // PHASE == RUN_MMOTOR
 
@@ -134,15 +134,21 @@ int setMainMotorPosition(unsigned int phase) {
 
         // If the direction changed move back to Start Pawl
         if (ret == 1) {
-            //-- Stops the motor before switching its direction
+
+            //-- This stops it from moving in the specified direction (Motor still powered)
             stopMainMotor();
+
             return 2;
             //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
         }
 
         if (motor_stat.direction == REST) {
+
+            //-- This stops it from moving in the specified direction
             stopMainMotor();
-            turnOffMotor();
+
+            //-- We don't want to power off the motor as it should retain its position until pawls are engaged
+            //turnOffMotor();
             return 1;
         }
     }
@@ -156,6 +162,11 @@ void stopMainMotor(void) {
 
     TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode
     TB1CCTL1 &= ~OUT;        // Force output to zero
+}
+
+void turnOnMotor(void) {
+    P1OUT |= ON_MOTOR;
+    motor_stat.power = ON;
 }
 
 void turnOffMotor(void) {
