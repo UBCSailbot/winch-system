@@ -13,7 +13,7 @@ enum test_type
 };
 
 //-- SELECT TEST TO BE PERFORMED HERE
-enum test_type test_sel = MOVE_MOTOR;
+enum test_type test_sel = MOTOR_POS;
 
 //-- CONTROL
 #define INCREMENT 44

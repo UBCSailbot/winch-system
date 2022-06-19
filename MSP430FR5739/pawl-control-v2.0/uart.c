@@ -21,8 +21,9 @@ static size_t uart_state  = READ;
 void init_uart(void) {
     UCA1CTLW0 |= UCSWRST + UCSSEL__SMCLK;   // Initially set UART A1 to reset and select SMCLK 1Mhz clk
 
-    UCA1BRW = 0x6;
-    UCA1MCTLW |= UCOS16 + 0x2080; // config for baud 9600 with 1Mhz clk. OCOS16 - 1, UCBRF = 0x80 (Lower Byte) and UCBRS = 0x20 (Upper Byte)
+    UCA1BRW = 0x3;
+    UCA1MCTLW |= UCOS16 + 0x0440; // config for baud 19200 with 1Mhz clk. OCOS16 - 1, UCBRF = 0x40 (Lower Byte) and UCBRS = 0x04 (Upper Byte)
+
 
     //-- Port 2, pin 6 USBTX and 5 USBRX
     P2SEL1 |= BIT5 + BIT6;       // Pin 5 and 6 are UCA1 TXD and RXD respectively
