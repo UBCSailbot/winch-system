@@ -12,7 +12,7 @@ enum test_type
 };
 
 //-- SELECT TEST TO BE PERFORMED HERE
-enum test_type test_sel = STATE_TRANSITION;
+enum test_type test_sel = WATCH_INPUT_MODE;
 
 
 void init(void);
