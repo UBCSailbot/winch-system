@@ -234,23 +234,28 @@ unsigned int setDirectionToMove(unsigned int setpoint) {
 }
 
 int moveToPosition(unsigned int setpoint) {
-    int err;
+    int ret;
 
-    err = setDirectionToMove(setpoint);
-    if (err) return err;
+    ret = setDirectionToMove(setpoint);
+    if (ret < 0) return ret;
 
-    err = setMainMotorPosition(INIT_MMOTOR);
-    if (err) return err;
+    ret = setMainMotorPosition(INIT_MMOTOR);
+    if (ret < 0) return ret;
 
-    while ( setMainMotorPosition(RUN_MMOTOR) != 1 ) {
+    ret = setMainMotorPosition(RUN_MMOTOR);
+
+    while ( ret != 1 && ret >= 0) {
 
         //-- 200 Hz
         __delay_cycles(5000);
+
+        ret = setMainMotorPosition(RUN_MMOTOR);
     }
 
     __delay_cycles(200000);
 
     turnOffMotor();
+    return ret;
 }
 
 
