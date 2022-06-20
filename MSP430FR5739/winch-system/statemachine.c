@@ -235,29 +235,33 @@ enum States get_next_state(void) {
  */
 enum States decode_msg(char msg[2]) {
     unsigned int pos, setpos;
-    int err;
+    int err, ret;
     enum States next_state = IDLE;
+
+    err = 0;
 
     // The first bytes xxxx_xxx0 ignoring the least significant bit is the identifier
     switch((int) (msg[0]) >> 1) {
 
     case 0x01:            // SET_POS
 
-        //-- If this action is busy we dont calculate pos and dir but create a busy command instead
-        if (!is_busy(SET_POS)) {
+        //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
+        setpos = ((int)msg[0] & 0x1) << 8 | msg[1];
 
-            //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
-            setpos = ((int)msg[0] & 0x1) << 8 | msg[1];
+        if (setpos > 360) {
+            err = 1;
+        }
 
-            if (setpos > 360) {
-                next_state = ABORT;
-            }
+        ret = setDirectionToMove(setpos);
 
-            err = setDirectionToMove(setpos);
+        if (ret < 0) {
+            err = 1;
+        }
 
-            if (err < 0) {
-                next_state = ABORT;
-            }
+        pos = getCurrentCachedPosition();
+
+        //-- If this action is busy or if setpoint is equal to current position proceed to send_to_uccm
+        if (!is_busy(SET_POS) && pos != setpos) {
 
             next_state = TURN_MOTOR_ON;
         } else {
@@ -266,6 +270,11 @@ enum States decode_msg(char msg[2]) {
 
         //-- Set UCCM_msg - pos. If busy then the command is automatically set to busy
         cur_cmd = new_command(SET_POS, setpos);
+
+        if (err) {
+            next_state = ABORT;
+            set_uccm_msg(0xFF);
+        }
         break;
 
     case 0x02:        // QUERY_POS

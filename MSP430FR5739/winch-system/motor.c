@@ -221,7 +221,7 @@ unsigned int setDirectionToMove(unsigned int setpoint) {
     motor_stat.setpoint = setpoint;
 
     err = setCurrentPosition();
-    if (err) return err;
+    if (err < 0) return err;
 
     if (motor_stat.position == setpoint) {
         //-- Position Reached
