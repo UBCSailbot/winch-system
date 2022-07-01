@@ -197,9 +197,9 @@ static int decode_msg(char msg[2]) {
     unsigned int next_state = IDLE;
 
     // The first bytes xxxx_xxx0 ignoring the least significant bit is the identifier
-    switch((int) (msg[0] >> 1)) {
+    switch((int) (msg[0]) >> 1) {
 
-    case 0b1000:            // SET_POS
+    case SETPOS_MSG:
 
         //-- If this action is busy we dont calculate pos and dir but create a busy command instead
         if (!is_busy(SET_POS)) {
@@ -222,7 +222,7 @@ static int decode_msg(char msg[2]) {
         cur_cmd = new_command(SET_POS, pos, dir, pos);
         break;
 
-    case 0b0010:        // QUERY_POS
+    case QUERYPOS_MSG:
 
         err = getCurrentPosition(&pos);
 
@@ -236,7 +236,7 @@ static int decode_msg(char msg[2]) {
         next_state = SEND_TO_UCCM;
         break;
 
-    case 0b0011:        // STOPLOCK
+    case STOPLOCK_MSG:
 
         //-- We need to clear all current commands that are running so we do not return to them after
         clear_all_commands();
@@ -246,7 +246,7 @@ static int decode_msg(char msg[2]) {
         next_state = ABORT;
         break;
 
-    case 0b0100:        // ALIVE
+    case ALIVE_MSG:
 
         cur_cmd = new_command(ALIVE, 0, 0,  0x5555);
 

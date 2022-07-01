@@ -24,6 +24,12 @@
 #define ABORT               8
 #define SEND_TO_UCCM        9
 
+//-- UCCM MSGS
+#define SETPOS_MSG          0x01
+#define QUERYPOS_MSG        0x02
+#define STOPLOCK_MSG        0x03
+#define ALIVE_MSG           0x04
+
 
 //-- Receive commands from the uccm. top level state machine
 void handle_commands(void);

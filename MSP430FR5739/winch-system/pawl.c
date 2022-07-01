@@ -197,7 +197,7 @@ static int disengageBoth(unsigned int phase) {
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
             stopGearMotor();
 
-            //-- Move in the reverse direction to counter-act enertia
+            //-- Move in the reverse direction to counter-act inertia
             dir ^= FORWARD;
             startGearMotor(dir, SLOW, 75);
             return 1;
