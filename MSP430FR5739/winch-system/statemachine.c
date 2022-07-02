@@ -62,6 +62,12 @@ static void statemachine(char msg[RXBUF_LEN]) {
         state = decode_msg(msg);
         break;
 
+    case TURN_MOTOR_ON:
+
+        turnOnMotor();
+        state = START_PAWL;
+        break;
+
     //-- SET_POS states
     case START_PAWL:
         //V_PRINTF("START_PAWL\r\n");
@@ -144,8 +150,13 @@ static void statemachine(char msg[RXBUF_LEN]) {
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
             state = ABORT;
         } else if (ret_val == 1){
-            state = SEND_TO_UCCM;
+            state = TURN_MOTOR_OFF;
         }
+        break;
+
+    case TURN_MOTOR_OFF:
+        turnOffMotor();
+        state = SEND_TO_UCCM;
         break;
 
     case ABORT:
@@ -213,7 +224,7 @@ static int decode_msg(char msg[2]) {
                 //-- TODO: Do something?
             }
 
-            next_state = START_PAWL;
+            next_state = TURN_MOTOR_ON;
         } else {
             next_state = SEND_TO_UCCM;
         }
@@ -264,13 +275,16 @@ static int decode_msg(char msg[2]) {
 }
 
 /*
- * Haults the main motor and Engages Pawl
+ * Halts the main motor and Engages Pawl
  */
 static int abort_action(void) {
    int err;
 
-    //-- Hault motor
-   stopMainMotor();
+   //-- Halt motor operation
+  stopMainMotor();
+
+   //-- Have motor on before we move pawls
+   turnOnMotor();
 
     //-- Engage pawl
    err = move_pawl(REST, INIT_PAWL);

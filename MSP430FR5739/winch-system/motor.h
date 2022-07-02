@@ -44,12 +44,23 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
 //-- Increment motor by a certain amount
 int incrementMainMotor(int direction, int increment);
 
-//-- Hault motor operation
+//-- Start motor operation
+static void startMainMotor(void);
+
+//-- Halt motor operation
 void stopMainMotor(void);
 
+//-- Enables power to motor
+void turnOnMotor(void);
+
+//-- Disables power to motor
 void turnOffMotor(void);
 
+//-- Checks if there is power to motor
 int isMotorOn(void);
+
+//-- Checks if motor is in operation
+int isMotorRunning(void);
 
 // Returns negative if error. position value will be between 0-360
 int getCurrentPosition(unsigned int * position);

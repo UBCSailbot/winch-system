@@ -24,6 +24,9 @@
 #define ABORT               8
 #define SEND_TO_UCCM        9
 
+#define TURN_MOTOR_ON       10
+#define TURN_MOTOR_OFF      11
+
 //-- UCCM MSGS
 #define SETPOS_MSG          0x01
 #define QUERYPOS_MSG        0x02

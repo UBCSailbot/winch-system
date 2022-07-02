@@ -48,6 +48,10 @@ void init_Main_Motor(void) {
 }
 
 int incrementMainMotor(int dir, int increment) {
+
+    //-- Motor should have already gone through the TURN_MOTOR_ON state
+    if (!isMotorOn()) return -1;
+
     //-- Set DIR pin
     switch(dir) {
     case CLOCKWISE:
@@ -59,18 +63,12 @@ int incrementMainMotor(int dir, int increment) {
         break;
 
     default:
-        return -1;  // Action not completed
+        return -2;  // Action not completed
     }
-
-    //-- Enable motor through motor controller
-    P1OUT |= ON_MOTOR;
 
     motor_increment = increment;
 
-    TB1CTL |= TBCLR;                // Clear timer count
-    TB1CTL |= MC_1;                 // Count up mode
-    TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
-    motor_state = ON;
+    startMainMotor();
 
     TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
 
@@ -91,6 +89,9 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
         setpoint = (position * POT_SCALAR) + 500;
 
         if (position > 360) return -1;
+
+        //-- Motor should have already gone through the TURN_MOTOR_ON state
+        if (!isMotorOn()) return -2;
 
         direction = *dir;
 
@@ -115,13 +116,8 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
         //-- Init the tries to 0
         motor_tries = 0;
 
-        //-- Enable motor through motor controller
-        P1OUT |= ON_MOTOR;
+        startMainMotor();
 
-        TB1CTL |= TBCLR;                // Clear timer count
-        TB1CTL |= MC_1;                 // Count up mode
-        TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
-        motor_state = ON;
     } else {    // PHASE == RUN_MMOTOR
 
         err = receive_potentiometer(&voltage);
@@ -142,7 +138,6 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
 
         if (voltage <= setpoint + 25 && voltage >= setpoint - 25) {
             stopMainMotor();
-            turnOffMotor();
             return 1;
         }
     }
@@ -154,8 +149,20 @@ void stopMainMotor(void) {
     TB1CTL &= ~MC_1;        // Hault PWM timer
     TB1CTL |= TBCLR;        // Clear timer count
 
-    TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode
+    TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode       [TBD: Look into these modes]
     TB1CCTL1 &= ~OUT;        // Force output to zero
+}
+
+static void startMainMotor(void) {
+    //-- Starts the PWM timer
+    TB1CTL |= TBCLR;                // Clear timer count
+    TB1CTL |= MC_1;                 // Count up mode
+    TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
+}
+
+void turnOnMotor(void) {
+    P1OUT |= ON_MOTOR;
+    motor_state = ON;
 }
 
 void turnOffMotor(void) {
@@ -165,6 +172,10 @@ void turnOffMotor(void) {
 
 int isMotorOn(void) {
     return motor_state;
+}
+
+int isMotorRunning(void) {
+    return TB1CTL & MC_1;
 }
 
 int getCurrentPosition(unsigned int * position) {
@@ -207,7 +218,10 @@ __interrupt void TIMER1_B0_ISR (void) {
     if (motor_increment <= 0) {
         TB1CCTL0 &= ~CCIE;  // Disable interrupts
         stopMainMotor();
-        turnOffMotor();
+
+        //-- Do not turn power off to the motor because it needs to retain its position
+        //turnOffMotor();
+
         motor_increment = 0;
     } else {
         motor_increment--;

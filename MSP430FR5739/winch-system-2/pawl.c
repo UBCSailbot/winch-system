@@ -74,7 +74,7 @@ static int disengageRight(unsigned int phase) {
 
     } else {    //-- RUN_PAWL
 
-        if (!isGearMotorOn() && !isMotorOn()) {
+        if (!isGearMotorOn() && !isMotorRunning()) {
             //-- If gear motor has timed out
             if (++motor_inc_tries > MAX_TRIES) return -3;
 
@@ -92,7 +92,7 @@ static int disengageRight(unsigned int phase) {
 
         if (pawl_right <= RIGHT_THRES) {
             stopGearMotor();
-            while (isMotorOn());
+            while (isMotorRunning());
             return 1;
         }
 
@@ -123,7 +123,7 @@ static int disengageLeft(unsigned int phase) {
         startGearMotor(0, MEDIUM, 200);
     } else {    //-- RUN_PAWL
 
-        if (!isGearMotorOn() && !isMotorOn()) {
+        if (!isGearMotorOn() && !isMotorRunning()) {
 
             //-- If gear motor has timed out
             if (++motor_inc_tries > MAX_TRIES) return -3;
@@ -141,7 +141,7 @@ static int disengageLeft(unsigned int phase) {
 
         if (pawl_left <= LEFT_THRES) {
             stopGearMotor();
-            while (isMotorOn());
+            while (isMotorRunning());
             return 1;
         }
     }
