@@ -86,7 +86,7 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
     int err;
 
     if (phase == INIT_MMOTOR) {
-        setpoint = (position * POT_SCALAR) + 500;
+        setpoint = (position * POT_SCALAR);
 
         if (position > 360) return -1;
 
@@ -136,7 +136,7 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
             //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
         }
 
-        if (voltage <= setpoint + 25 && voltage >= setpoint - 25) {
+        if (voltage == setpoint) {
             stopMainMotor();
             return 1;
         }
@@ -185,7 +185,7 @@ int getCurrentPosition(unsigned int * position) {
     err = receive_potentiometer(&voltage);
     if (err) return err;
 
-    *position = (unsigned int) ( (voltage - 500)/POT_SCALAR );
+    *position = (unsigned int) (voltage)/POT_SCALAR;
 
     return 0;
 }
@@ -195,7 +195,7 @@ unsigned int getDirection(unsigned int position, unsigned int * dir) {
     int err;
     unsigned int setpoint;
 
-    setpoint = (position * POT_SCALAR) + 500;
+    setpoint = (position * POT_SCALAR);
 
     err = receive_potentiometer(&voltage);
     if (err) return err;
