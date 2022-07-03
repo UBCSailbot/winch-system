@@ -51,11 +51,13 @@ void getMsg(char* msg) {
 
 void uccm_send(const char *format, ...) {
     va_list args;
-    char str[50] = "";
+    unsigned int num_write;
+    char str[MAX_UCCM_SEND] = "";
 
     va_start(args, format);
 
-    vsprintf(str, format, args);
+    num_write = vsnprintf (str, MAX_UCCM_SEND, format, args);
+    str[num_write] = '*';
 
     putString(str);
 
@@ -63,7 +65,9 @@ void uccm_send(const char *format, ...) {
 }
 
 void putString(char* message) {
-    while (*message != '\0') {
+    unsigned int count = 0;
+
+    while (*message != '*' && count++ < MAX_UCCM_SEND) {
         while(!(UCA1IFG & UCTXIFG));
 
         UCA1TXBUF = *message; // Put character in buffer

@@ -172,7 +172,7 @@ static void statemachine(char msg[RXBUF_LEN]) {
     case SEND_TO_UCCM:
 
         //-- Send message to the UCCM
-        uccm_send("%x\r\n\0", cur_cmd->msg);
+        uccm_send("%c%c\r\n", cur_cmd->msg >> 8, cur_cmd->msg & 0xFF);
 
         //-- Removes current command from the list
         end_command();
@@ -212,11 +212,11 @@ static int decode_msg(char msg[2]) {
 
     case SETPOS_MSG:
 
-        //-- If this action is busy we dont calculate pos and dir but create a busy command instead
-        if (!is_busy(SET_POS)) {
+        //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
+        pos = ((int)msg[0] & 0x1) << 8 | msg[1];
 
-            //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
-            pos = ((int)msg[0] & 0x1) << 8 | msg[1];
+        //-- If this action is busy we dont calculate pos and dir but create a busy command instead
+        if (!is_busy(SET_POS) && pos <= 360) {
 
             err = getDirection(pos, &dir);
 
