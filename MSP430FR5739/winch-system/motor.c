@@ -9,11 +9,8 @@
 #include "spi.h"
 
 int motor_increment;
-volatile int motor_state;
-unsigned int direction;
 unsigned int motor_tries = 0;
-unsigned int setpoint;
-
+unsigned int direction;
 
 /**
  * P2.2 DIR: 1 forward and 0 backward TODO: confirm
@@ -23,7 +20,12 @@ unsigned int setpoint;
 void init_Main_Motor(void) {
 
     motor_increment = 0;
-    motor_state = OFF;
+
+    //-- Fill initial value in motor status struct
+    motor_stat.power = OFF;
+    motor_stat.position = 0;
+    motor_stat.direction = REST;
+    motor_stat.setpoint = 180;
 
     //-- Init DIR port to output
     P2DIR |= DIR;
@@ -66,11 +68,16 @@ int incrementMainMotor(int dir, int increment) {
         return -2;  // Action not completed
     }
 
+    turnOnMotor();
+
     motor_increment = increment;
 
     startMainMotor();
 
     TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
+
+    //-- Wait until the increment is over 1000 Hz
+    while (TB1CTL & MC_1) __delay_cycles(1000);
 
     return 0;
 }
@@ -81,12 +88,12 @@ int incrementMainMotor(int dir, int increment) {
  * Returns -1 when error and 0 when success and 1 if motor has reached setpoint
  */
 int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int phase) {
-
+    int ret;
     unsigned int voltage;
-    int err;
 
     if (phase == INIT_MMOTOR) {
-        setpoint = (position * POT_SCALAR) + POT_OFFSET;
+
+        motor_stat.setpoint = (position * POT_SCALAR) + POT_OFFSET;
 
         if (position > 360) return -1;
 
@@ -120,10 +127,10 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
 
     } else {    // PHASE == RUN_MMOTOR
 
-        err = receive_potentiometer(&voltage);
-        if (err < 0) return -2;
+        ret = receive_potentiometer(&voltage);
+        if (ret < 0) return -2;
 
-        if (direction == CLOCKWISE && voltage > setpoint || direction == ANTICLOCKWISE && voltage < setpoint) {
+        if (direction == CLOCKWISE && voltage > motor_stat.setpoint || direction == ANTICLOCKWISE && voltage < motor_stat.setpoint) {
             //-- Stops the motor before switching its direction
             stopMainMotor();
 
@@ -136,7 +143,7 @@ int setMainMotorPosition(unsigned int position, unsigned int * dir, unsigned int
             //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
         }
 
-        if (voltage == setpoint) {
+        if (voltage == motor_stat.setpoint) {
             stopMainMotor();
             return 1;
         }
@@ -162,16 +169,16 @@ static void startMainMotor(void) {
 
 void turnOnMotor(void) {
     P1OUT |= ON_MOTOR;
-    motor_state = ON;
+    motor_stat.power = ON;
 }
 
 void turnOffMotor(void) {
     P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
-    motor_state = OFF;
+    motor_stat.power = OFF;
 }
 
 int isMotorOn(void) {
-    return motor_state;
+    return motor_stat.power;
 }
 
 int isMotorRunning(void) {

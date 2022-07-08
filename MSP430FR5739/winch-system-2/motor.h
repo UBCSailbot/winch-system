@@ -38,6 +38,17 @@
 #define RUN_MMOTOR  1
 
 
+//-- State of the main motor
+typedef struct motor_status_struct {
+    volatile unsigned int power;
+    unsigned int position;
+    unsigned int direction;
+    unsigned int setpoint;
+} motor_stat_t;
+
+motor_stat_t motor_stat;
+
+
 //-- Initializes main motor functionality and interrupts
 void init_Main_Motor(void);
 
