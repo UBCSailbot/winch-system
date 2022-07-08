@@ -86,7 +86,7 @@ int setMainMotorPosition(int position) {
     int setpoint;
     int tries = 0;
 
-    setpoint = (position * POT_SCALAR) + 500;
+    setpoint = CALC_VOLT(position);
 
     if (position > 360 || position < 0) return -1;
 
@@ -170,7 +170,7 @@ unsigned int getCurrentPosition(void) {
     err = receive_potentiometer(&voltage);
     if (err) return err;
 
-    return (unsigned int) (voltage - 500)/POT_SCALAR;
+    return (unsigned int) CALC_POS(voltage);
 }
 
 

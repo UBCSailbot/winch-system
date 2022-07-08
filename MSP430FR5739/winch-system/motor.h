@@ -27,7 +27,10 @@
 #define UPPER_COUNT 5682
 #define MID_COUNT 2841
 
-#define POT_SCALAR 11
+//-- Range 410 to 3685 therefore POT_SCALAR = (3685 - 410)/360
+#define POT_SCALAR 9
+#define POT_OFFSET 410
+
 #define MAX_MOTOR_TRIES 3
 
 //-- Two phase motor control
