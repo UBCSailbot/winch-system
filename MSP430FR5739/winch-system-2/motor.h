@@ -37,6 +37,9 @@
 #define INIT_MMOTOR 0
 #define RUN_MMOTOR  1
 
+//-- FUNCTION MACROS
+#define CALC_POS(X) ( (X - POT_OFFSET) / POT_SCALAR )
+#define CALC_VOLT(X) ( (X * POT_SCALAR) + POT_OFFSET )
 
 //-- State of the main motor
 typedef struct motor_status_struct {
@@ -86,7 +89,7 @@ unsigned int getCurrentCachedPosition(void);
 int setDirectionToMove(unsigned int setpoint);
 
 // Get saved direction value from the last call to setDirectionToMove
-unsigned int getCurrentCachedDirection(void);
+unsigned int getCurrentCachedDirectionToMove(void);
 
 
 #endif /* MOTOR_H_ */

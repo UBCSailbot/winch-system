@@ -206,7 +206,7 @@ int setCurrentPosition(void) {
     err = receive_potentiometer(&voltage);
     if (err) return err;
 
-    position = (unsigned int) ( (voltage - POT_OFFSET)/POT_SCALAR );
+    position = (unsigned int) CALC_POS(voltage);
 
     if (position > 360) return -1;
 

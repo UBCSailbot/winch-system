@@ -141,6 +141,8 @@ int setMainMotorPosition(int position) {
             if (++tries > MAX_MOTOR_TRIES) return -5;
         }
 
+        if (voltage == setpoint) stopMainMotor();
+
         __delay_cycles(1000); // 1kHz freq
     }while (voltage != setpoint);
 

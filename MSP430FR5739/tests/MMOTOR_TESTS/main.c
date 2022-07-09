@@ -10,7 +10,7 @@
 #define GET_POS    3
 
 //-- CONTROL
-#define TEST_SEL MOVE_MOTOR
+#define TEST_SEL MOTOR_POS
 #define INCREMENT 44
 
 void test_mainMotorIncrement(void);
@@ -77,17 +77,7 @@ void test_mainMotorIncrement(void) {
 
 void test_mainMotorPosition(void) {
     V_PRINTF("TEST main motor position \r\n");
-    int err = setMainMotorPosition(170);
-
-    __delay_cycles(1000000);
-
-    setMainMotorPosition(185);
-
-    __delay_cycles(1000000);
-
-    setMainMotorPosition(200);
-
-    __delay_cycles(1000000);
+    int err = setMainMotorPosition(360);
 
     V_PRINTF("ERROR: %d", err);
 }

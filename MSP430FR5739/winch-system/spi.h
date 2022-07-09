@@ -12,14 +12,15 @@
 #define AIN1_CONF 0x24AB
 #define AIN2_CONF 0x34AB
 
-#define AIN0_CONFID     1
-#define AIN1_CONFID     2
-#define AIN2_CONFID      4
+#define AIN0_CONFID         1
+#define AIN1_CONFID         2
+#define AIN2_CONFID         4
 
 #define CS_POT BIT6
 #define CS_HALL BIT5
 
-#define MAX_POT_TRIES 3
+#define MAX_POT_TRIES       3
+#define POT_MAX_VALUE    4095
 
 //-- Tracks current configs
 static unsigned int active_config;

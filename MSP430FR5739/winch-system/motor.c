@@ -206,7 +206,7 @@ int setCurrentPosition(void) {
     err = receive_potentiometer(&voltage);
     if (err) return err;
 
-    position = (unsigned int) ( (voltage - POT_OFFSET)/POT_SCALAR );
+    position = (unsigned int) CALC_POS(voltage);
 
     if (position > 360) return -1;
 
@@ -235,7 +235,11 @@ int setDirectionToMove(unsigned int setpoint) {
     int err;
     unsigned int temp_direction;
 
+<<<<<<< Updated upstream
     temp_direction = motor_stat.direction;
+=======
+    setpoint = CALC_VOLT(position);
+>>>>>>> Stashed changes
 
     motor_stat.setpoint = setpoint;
 
