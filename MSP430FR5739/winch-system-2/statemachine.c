@@ -227,6 +227,8 @@ static int decode_msg(char msg[2]) {
                 next_state = TURN_MOTOR_ON;
             }
 
+            setpos |= SETPOS_MSG << 9;
+
         } else {
 
             //-- If we are here it is either busy or pos > 360. new_command automaticaly sets uccm_msg
@@ -254,7 +256,7 @@ static int decode_msg(char msg[2]) {
         //-- We need to clear all current commands that are running so we do not return to them after
         clear_all_commands();
 
-        cur_cmd = new_command(STOPLOCK, 0x6);
+        cur_cmd = new_command(STOPLOCK, STOPLOCK_MSG << 9);
 
         next_state = ABORT;
         break;

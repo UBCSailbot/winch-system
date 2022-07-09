@@ -32,6 +32,7 @@
 #define QUERYPOS_MSG        0x02
 #define STOPLOCK_MSG        0x03
 #define ALIVE_MSG           0x04
+#define BUSY_MSG            0x08
 
 
 //-- Receive commands from the uccm. top level state machine

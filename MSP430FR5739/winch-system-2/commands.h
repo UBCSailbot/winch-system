@@ -78,7 +78,7 @@ t_cmd * new_command(int cmd_id, unsigned int uccm_msg) {
             //-- The command is already active
             new_cmd->type = ACTION_BUSY;
             active_cmd |= ACTION_BUSY;
-            new_cmd->msg = 0x1;
+            new_cmd->msg = BUSY_MSG << 9;
         } else {
             new_cmd->type = cmd_id;
             new_cmd->msg = uccm_msg;

@@ -235,11 +235,7 @@ int setDirectionToMove(unsigned int setpoint) {
     int err;
     unsigned int temp_direction;
 
-<<<<<<< Updated upstream
     temp_direction = motor_stat.direction;
-=======
-    setpoint = CALC_VOLT(position);
->>>>>>> Stashed changes
 
     motor_stat.setpoint = setpoint;
 
