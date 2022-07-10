@@ -27,6 +27,8 @@ void init(void) {
     init_spi();
     init_gearmotor();
     init_uart();
+
+    //-- Always call this last
     init_Main_Motor();
 
     __enable_interrupt();

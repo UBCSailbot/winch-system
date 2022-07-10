@@ -52,10 +52,11 @@ Mkfile.old
 dkms.conf
 .metadata/
 
-# Custom ignors 
+# Custom ignores 
 .jxbrowser.userdata/
 dvt/
 .tempFiles/
 RemoteSystemsTempFiles/
-
+*/Debug/*
+*prefs
 

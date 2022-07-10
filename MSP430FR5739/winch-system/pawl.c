@@ -32,8 +32,12 @@ unsigned int dir = 0;
  *
  * Return: negative when error, 0 when success and 1 when pawl position reached
  */
-int move_pawl(unsigned int direction, unsigned int phase) {
+int move_pawl(unsigned int phase) {
+    unsigned int direction;
     int ret = 0;
+
+    direction = getCurrentCachedDirectionToMove();
+
     switch(direction) {
     case CLOCKWISE:
         ret = disengageLeft(phase);
@@ -70,18 +74,18 @@ static int disengageRight(unsigned int phase) {
         motor_inc_tries = 0;
 
         //-- Turn the motor on until it reaches
-        startGearMotor(1, MEDIUM, 200);
+        startGearMotor(FORWARD, MEDIUM, 200);
 
     } else {    //-- RUN_PAWL
 
-        if (!isGearMotorOn() && !isMotorOn()) {
+        if (!isGearMotorOn() && !isMotorRunning()) {
             //-- If gear motor has timed out
             if (++motor_inc_tries > MAX_TRIES) return -3;
 
             incrementMainMotor(CLOCKWISE, 5);
 
             //-- Start gear motor again
-            startGearMotor(1, MEDIUM, 200);
+            startGearMotor(FORWARD, MEDIUM, 200);
         }
 
 
@@ -92,7 +96,7 @@ static int disengageRight(unsigned int phase) {
 
         if (pawl_right <= RIGHT_THRES) {
             stopGearMotor();
-            while (isMotorOn());
+            while (isMotorRunning());
             return 1;
         }
 
@@ -120,10 +124,10 @@ static int disengageLeft(unsigned int phase) {
 
         motor_inc_tries = 0;
 
-        startGearMotor(0, MEDIUM, 200);
+        startGearMotor(BACKWARD, MEDIUM, 200);
     } else {    //-- RUN_PAWL
 
-        if (!isGearMotorOn() && !isMotorOn()) {
+        if (!isGearMotorOn() && !isMotorRunning()) {
 
             //-- If gear motor has timed out
             if (++motor_inc_tries > MAX_TRIES) return -3;
@@ -131,7 +135,7 @@ static int disengageLeft(unsigned int phase) {
             incrementMainMotor(ANTICLOCKWISE, 5);
 
             //-- Start gear motor again
-            startGearMotor(0, MEDIUM, 200);
+            startGearMotor(BACKWARD, MEDIUM, 200);
         }
 
         do{
@@ -141,7 +145,7 @@ static int disengageLeft(unsigned int phase) {
 
         if (pawl_left <= LEFT_THRES) {
             stopGearMotor();
-            while (isMotorOn());
+            while (isMotorRunning());
             return 1;
         }
     }
@@ -149,7 +153,7 @@ static int disengageLeft(unsigned int phase) {
     return 0;
 }
 
-static int engageBoth(unsigned int phase) {
+int engageBoth(unsigned int phase) {
     int cam;
     int err;
     unsigned int spi_tries = 0;
@@ -197,7 +201,7 @@ static int engageBoth(unsigned int phase) {
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
             stopGearMotor();
 
-            //-- Move in the reverse direction to counter-act enertia
+            //-- Move in the reverse direction to counter-act inertia
             dir ^= FORWARD;
             startGearMotor(dir, SLOW, 75);
             return 1;

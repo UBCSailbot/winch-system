@@ -25,8 +25,6 @@
 typedef struct cmd {
     int type;
     int cont_state;
-    unsigned int data1;     // SetPoint
-    unsigned int data2;     // Direction
     unsigned int msg;       // UCCM MSG
 
 }t_cmd;
@@ -37,7 +35,7 @@ static t_cmd cmd_list[ACTIVE_CMD_SIZE];
 
 
 //-- Creates a new command. If the command is busy we set the type to be ACTION_BUSY instead
-t_cmd * new_command(int cmd, unsigned int data1, unsigned int data2, unsigned int uccm_msg);
+t_cmd * new_command(int cmd, unsigned int uccm_msg);
 
 //-- Removes current command from the list
 void end_command(void);
@@ -68,7 +66,7 @@ static t_cmd * get_current_command(void);
 
 //-- SOURCE CODE --
 
-t_cmd * new_command(int cmd_id, unsigned int data1, unsigned int data2, unsigned int uccm_msg) {
+t_cmd * new_command(int cmd_id, unsigned int uccm_msg) {
     t_cmd* new_cmd;
 
     if (cmd_index < ACTIVE_CMD_SIZE - 1) {
@@ -80,10 +78,8 @@ t_cmd * new_command(int cmd_id, unsigned int data1, unsigned int data2, unsigned
             //-- The command is already active
             new_cmd->type = ACTION_BUSY;
             active_cmd |= ACTION_BUSY;
-            new_cmd->msg = 0x1;
+            new_cmd->msg = BUSY_MSG << 9;
         } else {
-            new_cmd->data1 = data1;
-            new_cmd->data2 = data2;
             new_cmd->type = cmd_id;
             new_cmd->msg = uccm_msg;
             active_cmd |= cmd_id;
@@ -110,14 +106,6 @@ void save_current_state(unsigned int state) {
     t_cmd * cur_cmd = get_current_command();
     if (cur_cmd != (t_cmd*)0) {
         cur_cmd->cont_state = state;
-    }
-}
-
-void set_data(int data1, int data2) {
-    t_cmd * cur_cmd = get_current_command();
-    if (cur_cmd != (t_cmd*)0) {
-        cur_cmd->data1 = data1;
-        cur_cmd->data2 = data2;
     }
 }
 

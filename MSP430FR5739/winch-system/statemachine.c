@@ -11,151 +11,152 @@
 #include "motor.h"
 #include "pawl.h"
 #include "debug.h"
-//-- #include "uart.h" in statemachine.h
+
+
+//-- Include uart.h in header file
 
 unsigned int state = IDLE;
 t_cmd * cur_cmd;
 
 void handle_commands(void) {
     char msg[RXBUF_LEN] = "";
+    unsigned int rx_flag;
 
     while (1) {
+        rx_flag = isReady();
+        //-- If rx_ready we have an incoming msg
+        if (rx_flag) {
 
-        //-- Check if we have an incoming message from the UCCM
-        if (isReady()) {
-
-            //-- We only need to process this if we havn't reached our maximum capacity
+            //-- If the maximum active command threshold is not reached
             if (!max_active_reached()) {
-
                 getMsg(msg);
 
-                //-- NEED TO DO THIS SO WE CAN RETURN, INCASE THIS COMMAND IS BEING INTERRUPTED - If no active command then this does not do anything
+                //-- NEED TO DO THIS SO WE CAN RETURN - If no command active then this does not do anything
                 save_current_state(state);
 
-                //-- Decode this message to figure out the next state and creates a new command
-                state = decode_msg(msg);
+                state = DECODE;
             }
 
             //-- We ignore the rx_ready flag if max active threshold has been reached
             clearReady();
-        } else {
-
-            //-- If no new messages continue to whatever state we should be in
-            state = get_next_state();
         }
+
+        statemachine(msg);
 
         //-- 100 Hz
         __delay_cycles(10000);
     }
 }
 
-static unsigned int get_next_state(void) {
+static void statemachine(char msg[RXBUF_LEN]) {
     int ret_val = 0;
-    unsigned int next_state;
 
     switch(state) {
-
     case IDLE:
-        /*  DO NOTHING */
+        //V_PRINTF("Idle\r\n");
+        //--  Idle wait
         break;
-
     case DECODE:
-        /* State should never be decode as it is done right after receiving a UCCM msg */
+        //V_PRINTF("decode\r\n");
+        // Decode message and find next state
+        state = decode_msg(msg);
         break;
 
-    //-- SET_POS --//
+    case TURN_MOTOR_ON:
+
+        turnOnMotor();
+        state = START_PAWL;
+        break;
+
+    //-- SET_POS states
     case START_PAWL:
+        //V_PRINTF("START_PAWL\r\n");
+        //-- Send the direction data and initialize the PAWL
+        ret_val = move_pawl(INIT_PAWL);
 
-        //-- Initialize Pawl data2 -> direction
-        ret_val = move_pawl(cur_cmd->data2, INIT_PAWL);
         if (ret_val < 0) {
-
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: program an error lookup
-            next_state = ABORT;
+            state = ABORT;
         } else {
-
-            next_state = WAIT_PAWL;
+            state = WAIT_PAWL;
         }
         break;
 
     case WAIT_PAWL:
+        //V_PRINTF("WAIT_PAWL\r\n");
+        //-- Run pawl until action is complete. Action complete - 1, Run again - 0, Error < 0
+        ret_val = move_pawl(RUN_PAWL);
 
-        //-- Run pawl until action is complete data2 -> direction. Action complete - 1, Run again - 0, Error - < 0
-        ret_val = move_pawl(cur_cmd->data2, RUN_PAWL);
         if (ret_val < 0) {
-
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
-            next_state = ABORT;
+            state = ABORT;
         } else if (ret_val == 1){
-
-            next_state = START_MOTOR;
+            state = START_MOTOR;
         }
         break;
 
     case START_MOTOR:
-
-        //-- Initialize motor functions data1 -> Position, data2 -> Direction
-        ret_val = setMainMotorPosition(cur_cmd->data1, &cur_cmd->data2, INIT_MMOTOR);
+        //V_PRINTF("START_MOTOR\r\n");
+        //-- Initialize motor functions
+        ret_val = setMainMotorPosition(INIT_MMOTOR);
         if (ret_val < 0) {
-
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
-            next_state = ABORT;
+            state = ABORT;
         } else{
-
-            next_state = WAIT_MOTOR;
+            state = WAIT_MOTOR;
         }
         break;
 
     case WAIT_MOTOR:
-
-        //-- Run motor until action is complete data1 -> Position, data2 -> Direction. Action complete - 1, Run again - 0, Error < 0
-        ret_val = setMainMotorPosition(cur_cmd->data1, &cur_cmd->data2, RUN_MMOTOR);
+        //V_PRINTF("WAIT_MOTOR\r\n");
+        //-- Run motor until action is complete. Action complete - 1, Run again - 0, Error < 0
+        ret_val = setMainMotorPosition(RUN_MMOTOR);
+        //V_PRINTF("Ret value: %d\r\n", ret_val);
+        //V_PRINTF("MOTOR state: %d\r\n", P1OUT & 1);
         if (ret_val < 0) {
-
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
-            next_state = ABORT;
+            state = ABORT;
         } else if (ret_val == 2) {
-
             //-- Change sate to START_PAWLs
-            next_state = START_PAWL;
+            state = START_PAWL;
         } else if (ret_val == 1) {
-
-            next_state = START_ENGAGE_PAWL;
+            state = START_ENGAGE_PAWL;
         }
         break;
 
     case START_ENGAGE_PAWL:
-
+        //V_PRINTF("START_ENGAGE_PAW\r\n");
         //-- Initialize Pawls to engage
-        ret_val = move_pawl(REST, INIT_PAWL);
+        ret_val = engageBoth(INIT_PAWL);
         if (ret_val < 0) {
-
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
-            next_state = ABORT;
+            state = ABORT;
         } else {
-
-            next_state = WAIT_ENGAGE_PAWL;
+            state = WAIT_ENGAGE_PAWL;
         }
         break;
 
     case WAIT_ENGAGE_PAWL:
-
+        //V_PRINTF("WAIT_ENGAGE_PAWL\r\n");
         //-- Run pawl control until both engaged. Action complete - 1, Run again - 0, Error < 0
-        ret_val = move_pawl(REST, RUN_PAWL);
+        ret_val = engageBoth(RUN_PAWL);
         if (ret_val < 0) {
-
             //-- ERROR
             cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
-            next_state = ABORT;
+            state = ABORT;
         } else if (ret_val == 1){
-
-            next_state = SEND_TO_UCCM;
+            state = TURN_MOTOR_OFF;
         }
+        break;
+
+    case TURN_MOTOR_OFF:
+        turnOffMotor();
+        state = SEND_TO_UCCM;
         break;
 
     case ABORT:
@@ -165,7 +166,7 @@ static unsigned int get_next_state(void) {
             //-- Perform a PUC reset?
         }
 
-        next_state = SEND_TO_UCCM;
+        state = SEND_TO_UCCM;
         break;
 
     case SEND_TO_UCCM:
@@ -178,19 +179,15 @@ static unsigned int get_next_state(void) {
 
         //-- If we have another command resume otherwise go to IDLE
         if (is_command_available()) {
-
             cur_cmd = get_current_command();
 
-            //-- Update next state to the interrupted command
-            next_state = cur_cmd->cont_state;
+            //-- Update current state to the interrupted command
+            state = cur_cmd->cont_state;
         } else {
-
-            next_state = IDLE;
+            state = IDLE;
         }
         break;
     }
-
-    return next_state;
 }
 
 /*
@@ -206,70 +203,74 @@ static unsigned int get_next_state(void) {
  *      - ACTION_BUSY
  */
 static int decode_msg(char msg[2]) {
-    unsigned int pos, dir;
+    unsigned int pos, setpos;
     int err;
     unsigned int next_state = IDLE;
 
     // The first bytes xxxx_xxx0 ignoring the least significant bit is the identifier
     switch((int) (msg[0]) >> 1) {
 
-    case 0x01:            // SET_POS
+    case SETPOS_MSG:
+
+        //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
+        setpos = ((int)msg[0] & 0x1) << 8 | msg[1];
 
         //-- If this action is busy we dont calculate pos and dir but create a busy command instead
-        if (!is_busy(SET_POS)) {
+        if (!is_busy(SET_POS) && setpos <= 360) {
 
-            //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
-            pos = ((int)msg[0] & 0x1) << 8 | msg[1];
-
-            err = getDirection(pos, &dir);
+            err = setDirectionToMove(setpos);
 
             if (err < 0) {
                 //-- TODO: Do something?
+                next_state = ABORT;
+            } else {
+                next_state = TURN_MOTOR_ON;
             }
 
-            next_state = START_PAWL;
+            setpos |= SETPOS_MSG << 9;
+
         } else {
+
+            //-- If we are here it is either busy or pos > 360. new_command automaticaly sets uccm_msg
+            //-- for busy therefore we set pos to an error msg
+            setpos = 0xFF;
             next_state = SEND_TO_UCCM;
         }
 
-        //-- Sets data1 - pos data2 - dir and uccm_msg - pos. If busy then the command is automatically set to busy
-        cur_cmd = new_command(SET_POS, pos, dir, pos);
+        //-- Sets uccm_msg - pos. If busy then the command is automatically set to busy
+        cur_cmd = new_command(SET_POS, setpos);
         break;
 
-    case 0x02:        // QUERY_POS
+    case QUERYPOS_MSG:
 
-        err = getCurrentPosition(&pos);
+        pos = getCurrentCachedPosition();
 
         //-- data1: 0, data2: 0, uccm_msg: pot. If busy then command is set to busy type
-        cur_cmd = new_command(QUERY_POS, 0, 0,pos);
-
-        if (err < 0) {
-            //-- TODO: Error check
-        }
+        cur_cmd = new_command(QUERY_POS, pos);
 
         next_state = SEND_TO_UCCM;
         break;
 
-    case 0x03:        // STOPLOCK
+    case STOPLOCK_MSG:
 
         //-- We need to clear all current commands that are running so we do not return to them after
         clear_all_commands();
 
-        cur_cmd = new_command(STOPLOCK, 0, 0,0x6);
+        cur_cmd = new_command(STOPLOCK, STOPLOCK_MSG << 9);
 
         next_state = ABORT;
         break;
 
-    case 0x04:        // ALIVE
+    case ALIVE_MSG:
 
-        cur_cmd = new_command(ALIVE, 0, 0,  0x5555);
+        cur_cmd = new_command(ALIVE, 0x5555);
 
         next_state = SEND_TO_UCCM;
         break;
 
     default:            // UNDEF
 
-        cur_cmd = new_command(UNDEF, 0, 0,  0xFF00);
+        cur_cmd = new_command(UNDEF, 0xFF00);
 
         next_state = SEND_TO_UCCM;
         break;
@@ -278,23 +279,26 @@ static int decode_msg(char msg[2]) {
 }
 
 /*
- * Haults the main motor and Engages Pawl
+ * Halts the main motor and Engages Pawl
  */
 static int abort_action(void) {
    int err;
 
-    //-- Hault motor
-   stopMainMotor();
+   //-- Halt motor operation
+  stopMainMotor();
+
+   //-- Have motor on before we move pawls
+   turnOnMotor();
 
     //-- Engage pawl
-   err = move_pawl(REST, INIT_PAWL);
+   err = engageBoth(INIT_PAWL);
    if (err < 0) {
        return -1;
    }
 
    //-- Perform this function until either error or returns 1
    do {
-       err = move_pawl(REST, RUN_PAWL);
+       err = engageBoth(RUN_PAWL);
 
        //-- If there something is wrong error
        if (err < 0) {

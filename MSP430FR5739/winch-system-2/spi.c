@@ -117,9 +117,12 @@ int receive_potentiometer(unsigned int* pot_data) {
         P3OUT |= CS_POT;
         //V_PRINTF("POT data: %d \r\n", *pot_data);
 
-        if (++tries > MAX_POT_TRIES) return -1;
+        if (++tries > MAX_POT_TRIES) {
+            //-- TBD: Return 0 and set pot_data to POT_MAX or MIN
+            return -1;
+        }
 
-    } while (*pot_data < 500 || *pot_data > 4500);
+    } while (*pot_data > POT_MAX_VALUE);
 
 
     return 0;

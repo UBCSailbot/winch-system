@@ -9,7 +9,8 @@
 #define UART_H_
 
 
-#define RXBUF_LEN 2
+#define RXBUF_LEN       2
+#define MAX_UCCM_SEND   50
 
 //-- State machine
 #define PROCESS 0

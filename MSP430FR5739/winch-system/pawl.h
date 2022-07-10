@@ -33,7 +33,7 @@
 #define RUN_PAWL    1
 
 //-- Move the main pawls depending on the cur_direction
-int move_pawl(unsigned int direction, unsigned int phase);
+int move_pawl(unsigned int phase);
 
 //-- Disengages right pawl by controlling gear motor
 static int disengageRight(unsigned int phase);
@@ -41,7 +41,7 @@ static int disengageRight(unsigned int phase);
 //-- Disengages left pawl by controlling gear motor
 static int disengageLeft(unsigned int phase);
 
-//-- Engages both pawls by controlling gear motor
-static int engageBoth(unsigned int phase);
+//-- Disengages both pawls by controlling gear motor
+int engageBoth(unsigned int phase);
 
 #endif /* PAWL_H_ */

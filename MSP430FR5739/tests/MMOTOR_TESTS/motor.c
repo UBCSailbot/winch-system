@@ -86,7 +86,7 @@ int setMainMotorPosition(int position) {
     int setpoint;
     int tries = 0;
 
-    setpoint = (position * POT_SCALAR) + 500;
+    setpoint = CALC_VOLT(position);
 
     if (position > 360 || position < 0) return -1;
 
@@ -141,6 +141,8 @@ int setMainMotorPosition(int position) {
             if (++tries > MAX_MOTOR_TRIES) return -5;
         }
 
+        if (voltage == setpoint) stopMainMotor();
+
         __delay_cycles(1000); // 1kHz freq
     }while (voltage != setpoint);
 
@@ -170,7 +172,7 @@ unsigned int getCurrentPosition(void) {
     err = receive_potentiometer(&voltage);
     if (err) return err;
 
-    return (unsigned int) (voltage - 500)/POT_SCALAR;
+    return (unsigned int) CALC_POS(voltage);
 }
 
 
