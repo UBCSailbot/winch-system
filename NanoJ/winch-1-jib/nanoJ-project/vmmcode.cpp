@@ -1,4 +1,3 @@
-
 // You can map frequently used objects to be able to read or write them
 // using In.* and Out.*. Here we map the object 6041:00 as "In.StatusWord".
 map U16 StatusWord as input 0x6041:00
