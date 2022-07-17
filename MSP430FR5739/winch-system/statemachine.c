@@ -15,51 +15,37 @@
 
 //-- Include uart.h in header file
 
-unsigned int state = IDLE;
-t_cmd * cur_cmd;
+enum States state = IDLE;
 
 void handle_commands(void) {
-    char msg[RXBUF_LEN] = "";
-    unsigned int rx_flag;
+    char rx_msg[RXBUF_LEN] = "";
 
     while (1) {
-        rx_flag = isReady();
         //-- If rx_ready we have an incoming msg
-        if (rx_flag) {
+        if (isReady()) {
 
-            //-- If the maximum active command threshold is not reached
-            if (!max_active_reached()) {
-                getMsg(msg);
+            add_new_command(rx_msg);
 
-                //-- NEED TO DO THIS SO WE CAN RETURN - If no command active then this does not do anything
-                save_current_state(state);
-
-                state = DECODE;
-            }
-
-            //-- We ignore the rx_ready flag if max active threshold has been reached
             clearReady();
         }
 
-        statemachine(msg);
+        statemachine();
 
         //-- 100 Hz
         __delay_cycles(10000);
     }
 }
 
-static void statemachine(char msg[RXBUF_LEN]) {
+static void statemachine(void) {
     int ret_val = 0;
 
-    switch(state) {
+    switch(get_current_command_state()) {
     case IDLE:
-        //V_PRINTF("Idle\r\n");
         //--  Idle wait
         break;
     case DECODE:
-        //V_PRINTF("decode\r\n");
         // Decode message and find next state
-        state = decode_msg(msg);
+        state = decode_msg();
         break;
 
     case TURN_MOTOR_ON:
@@ -202,53 +188,40 @@ static void statemachine(char msg[RXBUF_LEN]) {
  *      - UNDEF
  *      - ACTION_BUSY
  */
-static int decode_msg(char msg[2]) {
+enum States decode_msg(void) {
     unsigned int pos, setpos;
     int err;
-    unsigned int next_state = IDLE;
+    enum States next_state = IDLE;
+    unsigned int rx_msg = get_current_rx_msg();
 
     // The first bytes xxxx_xxx0 ignoring the least significant bit is the identifier
-    switch((int) (msg[0]) >> 1) {
+    switch((rx_msg & 0xFF) >> 1) {
 
     case SETPOS_MSG:
 
         //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
-        setpos = ((int)msg[0] & 0x1) << 8 | msg[1];
+        setpos = (rx_msg & 0x1) << 8 | (rx_msg >> 8);
 
-        //-- If this action is busy we dont calculate pos and dir but create a busy command instead
-        if (!is_busy(SET_POS) && setpos <= 360) {
-
-            err = setDirectionToMove(setpos);
-
-            if (err < 0) {
-                //-- TODO: Do something?
-                next_state = ABORT;
-            } else {
-                next_state = TURN_MOTOR_ON;
-            }
-
-            setpos |= SETPOS_MSG << 9;
-
-        } else {
-
-            //-- If we are here it is either busy or pos > 360. new_command automaticaly sets uccm_msg
-            //-- for busy therefore we set pos to an error msg
-            setpos = 0xFF;
-            next_state = SEND_TO_UCCM;
+        if (setpos > 360) {
+            set_current_command(UNDEF, 0xFF00);
+            break;
         }
 
-        //-- Sets uccm_msg - pos. If busy then the command is automatically set to busy
-        cur_cmd = new_command(SET_POS, setpos);
+        err = setDirectionToMove(setpos);
+
+        if (err < 0) {
+            set_current_command(STOPLOCK, 0xFF);
+            break;
+        }
+
+        set_current_command(SET_POS, setpos);
         break;
 
     case QUERYPOS_MSG:
 
         pos = getCurrentCachedPosition();
 
-        //-- data1: 0, data2: 0, uccm_msg: pot. If busy then command is set to busy type
-        cur_cmd = new_command(QUERY_POS, pos);
-
-        next_state = SEND_TO_UCCM;
+        set_current_command(QUERY_POS, pos);
         break;
 
     case STOPLOCK_MSG:
@@ -256,25 +229,20 @@ static int decode_msg(char msg[2]) {
         //-- We need to clear all current commands that are running so we do not return to them after
         clear_all_commands();
 
-        cur_cmd = new_command(STOPLOCK, STOPLOCK_MSG << 9);
-
-        next_state = ABORT;
+        set_current_command(STOPLOCK, STOPLOCK_MSG << 9);
         break;
 
     case ALIVE_MSG:
 
-        cur_cmd = new_command(ALIVE, 0x5555);
-
-        next_state = SEND_TO_UCCM;
+        set_current_command(ALIVE, 0x5555);
         break;
 
     default:            // UNDEF
 
-        cur_cmd = new_command(UNDEF, 0xFF00);
-
-        next_state = SEND_TO_UCCM;
+        set_current_command(UNDEF, 0xFF00);
         break;
     }
+
     return next_state;
 }
 
