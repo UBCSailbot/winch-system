@@ -9,7 +9,8 @@
 #define UART_H_
 
 
-#define RXBUF_LEN 2
+#define RXBUF_LEN       2
+#define MAX_UCCM_SEND   50
 
 //-- State machine
 #define PROCESS 0
@@ -34,7 +35,7 @@ void clearReady(void);
 //-- Receive command from rxbuffer
 void getMsg(char* msg);
 
-void switch_to_echo_mode(void);
+
 
 
 #endif /* UART_H_ */

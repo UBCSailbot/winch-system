@@ -16,109 +16,117 @@ t_cmd * cur_cmd;
 
 void handle_commands(void) {
     char msg[RXBUF_LEN] = "";
+    unsigned int rx_flag;
 
     while (1) {
+        rx_flag = isReady();
+        //-- If rx_ready we have an incoming msg
+        if (rx_flag) {
 
-        //-- Check if we have an incoming message from the UCCM
-        if (isReady()) {
-
-            V_PRINTF("\r\nInterrupt -> ");
-
-            //-- We only need to process this if we havn't reached our maximum capacity
+            //-- If the maximum active command threshold is not reached
             if (!max_active_reached()) {
-
                 getMsg(msg);
 
-                //-- NEED TO DO THIS SO WE CAN RETURN, INCASE THIS COMMAND IS BEING INTERRUPTED - If no active command then this does not do anything
+                //-- NEED TO DO THIS SO WE CAN RETURN - If no command active then this does not do anything
                 save_current_state(state);
 
-                //-- Decode this message to figure out the next state and creates a new command
-                state = decode_msg(msg);
-            } else
-            {
-                V_PRINTF("MAX COMMANDS! \r\n");
+                state = DECODE;
             }
 
             //-- We ignore the rx_ready flag if max active threshold has been reached
             clearReady();
-        } else {
-
-            //-- If no new messages continue to whatever state we should be in
-            state = get_next_state();
         }
+
+        statemachine(msg);
 
         //-- 100 Hz
         __delay_cycles(10000);
     }
 }
 
-static unsigned int get_next_state(void) {
-
-    unsigned int next_state;
+static void statemachine(char msg[RXBUF_LEN]) {
+    int next_state;
 
     switch(state) {
 
     case IDLE:
         /*  DO NOTHING */
+        // print debug idle
+        // Turn off cpu
+
+        V_PRINTF("IDLE")
+
+
         break;
 
     case DECODE:
-        /* State should never be decode as it is done right after receiving a UCCM msg */
+        next_state = decode_msg(msg);
+        break;
+
+    case TURN_MOTOR_ON:
+        V_PRINTF("TURN_MOTOR_ON -> ")
+        next_state = START_PAWL;
         break;
 
     //-- SET_POS --//
     case START_PAWL:
 
-        V_PRINTF("START_PAWL -> ");
+        V_PRINTF("START_PAWL -> ")
 
         next_state = WAIT_PAWL;
         break;
 
     case WAIT_PAWL:
 
-        V_PRINTF("WAIT_PAWL -> ");
+        V_PRINTF("WAIT_PAWL -> ")
 
         next_state = START_MOTOR;
         break;
 
     case START_MOTOR:
 
-        V_PRINTF("START_MOTOR -> ");
+        V_PRINTF("START_MOTOR -> ")
 
         next_state = WAIT_MOTOR;
         break;
 
     case WAIT_MOTOR:
 
-        V_PRINTF("WAIT_MOTOR -> ");
+        V_PRINTF("WAIT_MOTOR -> ")
 
         next_state = START_ENGAGE_PAWL;
         break;
 
     case START_ENGAGE_PAWL:
 
-        V_PRINTF("START_ENGAGE_PAWL -> ");
+        V_PRINTF("START_ENGAGE_PAWL -> ")
 
         next_state = WAIT_ENGAGE_PAWL;
         break;
 
     case WAIT_ENGAGE_PAWL:
 
-        V_PRINTF("WAIT_ENGAGE_PAWL -> ");
+        V_PRINTF("WAIT_ENGAGE_PAWL -> ")
 
+        next_state = TURN_MOTOR_OFF;
+        break;
+
+    case TURN_MOTOR_OFF:
+
+        V_PRINTF("TURN_MOTOR_OFF -> ")
         next_state = SEND_TO_UCCM;
         break;
 
     case ABORT:
 
-        V_PRINTF("ABORT! -> ");
+        V_PRINTF("ABORT! -> ")
 
         next_state = SEND_TO_UCCM;
         break;
 
     case SEND_TO_UCCM:
 
-        V_PRINTF("SEND_TO_UCCM \r\n");
+        V_PRINTF("SEND_TO_UCCM \r\n")
 
         //-- Send message to the UCCM
         uccm_send("%c%c\r\n", cur_cmd->msg >> 8, cur_cmd->msg & 0xFF);
@@ -140,7 +148,7 @@ static unsigned int get_next_state(void) {
         break;
     }
 
-    return next_state;
+    state = next_state;
 }
 
 /*
@@ -156,70 +164,65 @@ static unsigned int get_next_state(void) {
  *      - ACTION_BUSY
  */
 static int decode_msg(char msg[2]) {
-    unsigned int pos, dir;
-    int err;
+    unsigned int pos, setpos;
     unsigned int next_state = IDLE;
 
     // The first bytes xxxx_xxx0 ignoring the least significant bit is the identifier
     switch((int) (msg[0]) >> 1) {
 
-    case 0x01:            // SET_POS
+    case SETPOS_MSG:
+
+        //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
+        setpos = 180;
 
         //-- If this action is busy we dont calculate pos and dir but create a busy command instead
-        if (!is_busy(SET_POS)) {
+        if (!is_busy(SET_POS) && setpos <= 360) {
 
-            //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
-            pos = ((int)msg[0] & 0x1) << 8 | msg[1];
+            setpos |= SETPOS_MSG << 9;
+            next_state = TURN_MOTOR_ON;
 
-            err = getDirection(pos, &dir);
-
-            if (err < 0) {
-                //-- TODO: Do something?
-            }
-
-            next_state = START_PAWL;
         } else {
+
+            //-- If we are here it is either busy or pos > 360. new_command automaticaly sets uccm_msg
+            //-- for busy therefore we set pos to an error msg
+            setpos = 0xFF;
             next_state = SEND_TO_UCCM;
         }
 
-        //-- Sets data1 - pos data2 - dir and uccm_msg - pos. If busy then the command is automatically set to busy
-        cur_cmd = new_command(SET_POS, pos, dir, pos);
+        //-- Sets uccm_msg - pos. If busy then the command is automatically set to busy
+        cur_cmd = new_command(SET_POS, setpos);
         break;
 
-    case 0x02:        // QUERY_POS
+    case QUERYPOS_MSG:
 
-        err = getCurrentPosition(&pos);
+        pos = 180;
 
         //-- data1: 0, data2: 0, uccm_msg: pot. If busy then command is set to busy type
-        cur_cmd = new_command(QUERY_POS, 0, 0,pos);
-
-        if (err < 0) {
-            //-- TODO: Error check
-        }
+        cur_cmd = new_command(QUERY_POS, pos);
 
         next_state = SEND_TO_UCCM;
         break;
 
-    case 0x03:        // STOPLOCK
+    case STOPLOCK_MSG:
 
         //-- We need to clear all current commands that are running so we do not return to them after
         clear_all_commands();
 
-        cur_cmd = new_command(STOPLOCK, 0, 0,0x6);
+        cur_cmd = new_command(STOPLOCK, STOPLOCK_MSG << 9);
 
         next_state = ABORT;
         break;
 
-    case 0x04:        // ALIVE
+    case ALIVE_MSG:
 
-        cur_cmd = new_command(ALIVE, 0, 0,  0x5555);
+        cur_cmd = new_command(ALIVE, 0x5555);
 
         next_state = SEND_TO_UCCM;
         break;
 
     default:            // UNDEF
 
-        cur_cmd = new_command(UNDEF, 0, 0,  0xFF00);
+        cur_cmd = new_command(UNDEF, 0xFF00);
 
         next_state = SEND_TO_UCCM;
         break;
