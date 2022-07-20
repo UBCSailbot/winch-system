@@ -23,15 +23,34 @@
 
 
 typedef struct cmd {
+<<<<<<< Updated upstream
     int type;
     int cont_state;
     unsigned int msg;       // UCCM MSG
 
+=======
+    unsigned int    free   = 1;
+    unsigned int    type;
+    enum States    state;
+    unsigned int  rx_msg;       // FROM UCCM MSG
+    unsigned int  tx_msg;       // TO UCCM MSG
+>>>>>>> Stashed changes
 }t_cmd;
 
 static int active_cmd;
 static int cmd_index = 0;
 static t_cmd cmd_list[ACTIVE_CMD_SIZE];
+<<<<<<< Updated upstream
+=======
+static const t_cmd idle_cmd =
+{
+ 1
+ IDLE_CMD,
+ IDLE,
+ 0,
+ 0
+};
+>>>>>>> Stashed changes
 
 
 //-- Creates a new command. If the command is busy we set the type to be ACTION_BUSY instead
@@ -139,6 +158,10 @@ static t_cmd * get_current_command(void) {
 }
 
 
+<<<<<<< Updated upstream
+=======
+static void find_next_active_cmd(void);
+>>>>>>> Stashed changes
 
 
 #endif /* COMMANDS_H_ */

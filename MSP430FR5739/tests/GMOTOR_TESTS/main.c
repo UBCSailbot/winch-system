@@ -13,7 +13,7 @@ enum test_type
 };
 
 //-- SELECT TEST TO BE PERFORMED HERE
-enum test_type test_sel = MOVE_TIME_T;
+enum test_type test_sel = MOVE_SPI_DATA_T;
 
 
 #define DELAY 3500000
