@@ -59,4 +59,6 @@ dvt/
 RemoteSystemsTempFiles/
 */Debug/*
 *prefs
-
+*.mk
+*/makefile
+*.xml

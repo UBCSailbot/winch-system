@@ -16,6 +16,7 @@ volatile int rx_flag = 0;
 char rxbuf[RXBUF_LEN] = "";
 size_t bufpos = 0;
 static size_t uart_state  = READ;
+int ECHO_UART = 0;
 
 
 void init_uart(void) {
@@ -85,12 +86,16 @@ __interrupt void USCI_A1_ISR(void) {
         break;
     case 0x02: // Vector 2: UCRXIFG
         c = UCA1RXBUF;
+        if( ECHO_UART ) {
+            UCA1TXBUF = c;
+            break;
+        }
         switch(uart_state) {
             case PROCESS:
                 if (c == '\n' || c == '\r') {
                     // SUCCES as line ends after 2 bytes
                     rx_flag = 1;
-
+                    __low_power_mode_off_on_exit();
                     rxbuf[bufpos] = '\0';
                     uart_state = READ;
                 } else {
@@ -130,6 +135,11 @@ __interrupt void USCI_A1_ISR(void) {
         break;
     }
 }
+
+void switch_to_echo_mode(void) {
+    ECHO_UART = 1;
+}
+
 
 //-- TEST UART
 //#pragma vector = USCI_A1_VECTOR

@@ -55,8 +55,7 @@ static void statemachine(char msg[RXBUF_LEN]) {
         // Turn off cpu
 
         V_PRINTF("IDLE")
-
-
+        __low_power_mode_4();
         break;
 
     case DECODE:
