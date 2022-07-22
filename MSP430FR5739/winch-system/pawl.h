@@ -18,8 +18,8 @@
 #define FORWARD    1
 
 //-- Pawl threshold values
-#define RIGHT_THRES 0xfb51
-#define LEFT_THRES  0xf288
+#define RIGHT_THRES 0xef00
+#define LEFT_THRES  0xed00
 #define CAM_THRES_UPPER -200
 #define CAM_THRES_LOWER -400
 
