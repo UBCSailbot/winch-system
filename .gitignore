@@ -62,7 +62,3 @@ RemoteSystemsTempFiles/
 *.mk
 */makefile
 *.xml
-*.ccsproject
-*.cproject
-*.ccxml
-
