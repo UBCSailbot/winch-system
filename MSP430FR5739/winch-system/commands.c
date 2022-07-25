@@ -21,10 +21,11 @@
  */
 void add_new_command(unsigned int rx_msg) {
     t_cmd * new_cmd = (t_cmd *)(0);
+    int i;
 
     if ( !max_active_reached() ) {
 
-        for (int i = 0; i <= ACTIVE_CMD_SIZE; i++) {
+        for (i = 0; i <= ACTIVE_CMD_SIZE; i++) {
             if ( is_cmd_index_free(i) ) {
                 new_cmd = &cmd_list[i];
                 break;
@@ -101,7 +102,7 @@ void end_command(void) {
 t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
     t_cmd * current_cmd;
 
-    if (is_busy(cmd)) {
+    if (is_busy(cmd_type)) {
         cmd_type = ACTION_BUSY;
         tx_msg = BUSY_MSG << 9;
     }
@@ -113,8 +114,8 @@ t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
         return IDLE;
     }
 
-    current_cmd->type = cmd;
-    current_cmd->state = lookup_cmd_start_state(cmd);
+    current_cmd->type = cmd_type;
+    current_cmd->state = lookup_cmd_start_state(cmd_type);
     current_cmd->tx_msg = tx_msg;
 
     return current_cmd->state;
@@ -131,7 +132,7 @@ t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
  *  Return:     pointer to the current active command
  *              nullptr - if current command is free or cmd_index out of bounds
  *
- *  Notes:      none
+ *  Notes:      check if t_cmd is not a nullptr before using it
  */
 static t_cmd * get_current_command(void) {
 
@@ -142,11 +143,31 @@ static t_cmd * get_current_command(void) {
     t_cmd * current_cmd = &cmd_list[cmd_index];
 
     if (current_cmd->free) {
-
         return (t_cmd*)0;
     }
 
     return &cmd_list[cmd_index];
+}
+
+/**
+ *  Name:       set_current_command_state
+ *
+ *
+ *  Purpose:    sets the current state the command is in
+ *
+ *  Params:     state - the current state to be set
+ *
+ *  Return:     none
+ *
+ *  Notes:      NOP if current command is free or
+ *              not available
+ */
+void set_current_command_state(t_state state) {
+    t_cmd * cur_cmd = get_current_command();
+
+    if (cur_cmd != (t_cmd*)0) {
+        cur_cmd->state = state;
+    }
 }
 
 /**
@@ -171,7 +192,13 @@ t_state get_current_command_state(void) {
     find_next_active_cmd();
 
     current_cmd = get_current_command();
-    current_state = current_cmd->state;
+
+    if (current_cmd == (t_cmd *)0) {
+        current_state = IDLE;
+    } else {
+        current_state = current_cmd->state;
+    }
+
 
     return current_state;
 }
@@ -184,10 +211,10 @@ t_state get_current_command_state(void) {
  *
  *  Params:     cmd_type - the type of the command to lookup
  *
- *  Return:     the next state the command would be set to
- *              IDLE if current command does not exist
+ *  Return:     the first next state for each command
  *
- *  Notes:      none
+ *  Notes:      idle command types will have an abort state as
+ *              this type is not supposed to be set
  */
 static t_state lookup_cmd_start_state(unsigned int cmd_type) {
     t_state start_state = IDLE;
@@ -206,8 +233,7 @@ static t_state lookup_cmd_start_state(unsigned int cmd_type) {
         break;
 
     case IDLE_CMD:
-        start_state = IDLE;
-        break;
+        // Never set a new idle command
 
     case STOPLOCK:
     default:
@@ -232,9 +258,55 @@ static t_state lookup_cmd_start_state(unsigned int cmd_type) {
  *  Notes:      NOP if no current command is not available
  */
 void set_current_tx_msg(unsigned int tx_msg) {
-    t_cmd * cur_cmd = get_current_command();
-    if (cur_cmd != &(t_cmd*)0) {
-        cur_cmd->tx = uccm_msg;
+    t_cmd * current_cmd = get_current_command();
+    if (current_cmd != (t_cmd*)0) {
+        current_cmd->tx_msg = tx_msg;
+    }
+}
+
+/**
+ *  Name:       get_current_tx_msg
+ *
+ *
+ *  Purpose:    gets the message to be transmitted to the UCCM
+ *
+ *  Params:     none
+ *
+ *  Return:     0 when no active command
+ *
+ *  Notes:      none
+ */
+unsigned int get_current_tx_msg(void) {
+    t_cmd * current_cmd = get_current_command();
+    unsigned int current_tx_msg;
+
+    if (current_cmd == (t_cmd *)0) {
+        current_tx_msg = 0;
+    } else {
+        current_tx_msg = current_cmd->tx_msg;
+    }
+
+    return current_tx_msg;
+}
+
+/**
+ *  Name:       set_current_rx_msg
+ *
+ *
+ *  Purpose:    sets the rx msg that was received from the UCCM
+ *              for the current active command
+ *
+ *  Params:     rx_msg - message received from the uccm
+ *
+ *  Return:     none
+ *
+ *  Notes:      none
+ */
+void set_current_rx_msg(unsigned int rx_msg) {
+    t_cmd * current_cmd = get_current_command();
+
+    if (current_cmd != (t_cmd *)0) {
+        current_cmd->rx_msg = rx_msg;
     }
 }
 
@@ -249,6 +321,7 @@ void set_current_tx_msg(unsigned int tx_msg) {
  *
  *  Return:     rx msg received from the UCCM for the current
  *              active command
+ *              if current command is not active then return 0
  *
  *  Notes:      none
  */
@@ -257,7 +330,12 @@ unsigned int get_current_rx_msg(void) {
     unsigned int current_rx_msg;
 
     current_cmd = get_current_command();
-    current_rx_msg = current_cmd->rx_msg;
+
+    if (current_cmd == (t_cmd *)0) {
+        current_rx_msg = 0;
+    } else {
+        current_rx_msg = current_cmd->rx_msg;
+    }
 
     return current_rx_msg;
 }
@@ -277,34 +355,6 @@ unsigned int get_current_rx_msg(void) {
  */
 static unsigned int is_command_available(void) {
     return !(num_active_cmd <= 0);
-}
-
-/**
- *  Name:       set_current_command_state
- *
- *
- *  Purpose:    sets the current state the command is in
- *
- *  Params:     state - the current state to be set
- *
- *  Return:     none
- *
- *  Notes:      NOP if current command is free or
- *              not available
- */
-void set_current_command_state(t_state state) {
-    t_cmd * cur_cmd = get_current_command();
-
-    if (cur_cmd->free) {
-        //-- Do nothing if this command is freed
-        return;
-    }
-
-    if (cur_cmd == (t_cmd*)0) {
-        return;
-    }
-
-    cur_cmd->cont_state = state;
 }
 
 /**
@@ -353,9 +403,10 @@ static unsigned int max_active_reached(void) {
  *  Notes:      none
  */
 void clear_all_other_commands(void) {
-    t_cmd current_cmd = (t_cmd *)(0);
+    t_cmd * current_cmd = (t_cmd *)(0);
+    int i;
 
-    for (int i = 0; i <= ACTIVE_CMD_SIZE; i++) {
+    for (i = 0; i <= ACTIVE_CMD_SIZE; i++) {
         current_cmd = &cmd_list[i];
 
         if (i != cmd_index) {

@@ -44,7 +44,7 @@ static t_cmd cmd_list[ACTIVE_CMD_SIZE] = {
 
 static const t_cmd idle_cmd =
 {
- 1
+ 1,
  IDLE_CMD,
  IDLE,
  0,
@@ -58,14 +58,8 @@ void add_new_command(unsigned int rx_msg);
 //-- Removes current command from the list
 void end_command(void);
 
-//-- Returns 1 if available and 0 otherwise
-static unsigned int is_command_available(void);
-
 //-- Returns 1 if not busy and 0 otherwise
 unsigned int is_busy(int cmd_id);
-
-//-- Indicates if the max number of active commands have been reached
-unsigned int max_active_reached(void);
 
 //-- Clears all other commands expect current
 void clear_all_other_commands(void);
@@ -76,20 +70,27 @@ void clear_all_other_commands(void);
 //-- Sets the command type and/or tx_msg for the current command, and returns the next state
 t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg);
 
-//-- Set the values for the tx_msg variable in the t_cmd structure
-void set_current_tx_msg(unsigned int tx_msg);
-
-//-- Gets the value of rx_msg in the t_cmd structure
-unsigned int get_current_rx_msg(void);
-
-//-- Returns the command currently running
+//-- Gets the command currently running
 static t_cmd * get_current_command(void);
+
+//-- Sets the current running state of the command
+void set_current_command_state(t_state state);
 
 //-- Gets the current running state of the command
 t_state get_current_command_state(void);
 
-//-- Sets the current running state of the command
-void set_current_command_state(t_state state);
+//-- Set the values for the tx_msg variable in the t_cmd structure
+void set_current_tx_msg(unsigned int tx_msg);
+
+//-- Gets the value for the tx_msg variable in the t_cmd structure
+unsigned int get_current_tx_msg(void);
+
+//-- Sets the value of rx_msg in the t_cmd structure
+void set_current_rx_msg(unsigned int rx_msg);
+
+//-- Gets the value of rx_msg in the t_cmd structure
+unsigned int get_current_rx_msg(void);
+
 
 //-- HELPER FUNCTIONS --
 
@@ -101,5 +102,11 @@ static unsigned int is_cmd_index_free(unsigned index);
 
 //-- Looks up what the starting state of the command being ran is
 static t_state lookup_cmd_start_state(unsigned int cmd_type);
+
+//-- Returns 1 if available and 0 otherwise
+static unsigned int is_command_available(void);
+
+//-- Indicates if the max number of active commands have been reached
+static unsigned int max_active_reached(void);
 
 #endif /* COMMANDS_H_ */

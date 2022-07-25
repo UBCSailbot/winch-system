@@ -12,10 +12,8 @@
 #include "pawl.h"
 #include "debug.h"
 
-
 //-- Include uart.h in header file
 
-unsigned int state = IDLE;
 
 void handle_commands(void) {
     char rx_msg[RXBUF_LEN] = "";
@@ -26,7 +24,7 @@ void handle_commands(void) {
 
             getMsg(rx_msg);
 
-            add_new_command((unsigned int) rx_msg);
+            add_new_command((unsigned int) rx_msg[0] | ((unsigned int) rx_msg[1]) << 8);
 
             clearReady();
         }
@@ -42,7 +40,8 @@ void handle_commands(void) {
 
 static void statemachine(void) {
     int ret_val = 0;
-    t_state next_state;
+    t_state next_state = IDLE;
+    unsigned int tx_msg;
 
     switch(get_current_command_state()) {
 
@@ -52,7 +51,7 @@ static void statemachine(void) {
 
     case DECODE:
         // Decode message and find next state
-        next_state = decode_msg(msg);
+        next_state = decode_msg();
         break;
 
     case TURN_MOTOR_ON:
@@ -66,7 +65,7 @@ static void statemachine(void) {
         ret_val = move_pawl(INIT_PAWL);
         if (ret_val < 0) {
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: program an error lookup
+            set_current_tx_msg(0xFF);
             next_state = ABORT;
         } else {
             next_state = WAIT_PAWL;
@@ -78,7 +77,7 @@ static void statemachine(void) {
         ret_val = move_pawl(RUN_PAWL);
         if (ret_val < 0) {
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_current_tx_msg(0xFF);
             next_state = ABORT;
         } else if (ret_val == 1){
             next_state = START_MOTOR;
@@ -90,7 +89,7 @@ static void statemachine(void) {
         ret_val = setMainMotorPosition(INIT_MMOTOR);
         if (ret_val < 0) {
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_current_tx_msg(0xFF);
             next_state = ABORT;
         } else{
             next_state = WAIT_MOTOR;
@@ -102,7 +101,7 @@ static void statemachine(void) {
         ret_val = setMainMotorPosition(RUN_MMOTOR);
         if (ret_val < 0) {
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_current_tx_msg(0xFF);
             next_state = ABORT;
         } else if (ret_val == 2) {
             //-- Change sate to START_PAWLs
@@ -117,7 +116,7 @@ static void statemachine(void) {
         ret_val = engageBoth(INIT_PAWL);
         if (ret_val < 0) {
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_current_tx_msg(0xFF);
             next_state = ABORT;
         } else {
             next_state = WAIT_ENGAGE_PAWL;
@@ -129,7 +128,7 @@ static void statemachine(void) {
         ret_val = engageBoth(RUN_PAWL);
         if (ret_val < 0) {
             //-- ERROR
-            cur_cmd->msg = 0xFF;    //TODO: Build a error lookup
+            set_current_tx_msg(0xFF);
             next_state = ABORT;
         } else if (ret_val == 1){
             next_state = TURN_MOTOR_OFF;
@@ -151,23 +150,20 @@ static void statemachine(void) {
         break;
 
     case SEND_TO_UCCM:
+        tx_msg = get_current_tx_msg();
+
         //-- Send message to the UCCM
-        uccm_send("%c%c\r\n", cur_cmd->msg >> 8, cur_cmd->msg & 0xFF);
+        uccm_send("%c%c\r\n", tx_msg >> 8, tx_msg & 0xFF);
 
         //-- Removes current command from the list
         end_command();
 
-        //-- If we have another command resume otherwise go to IDLE
-        if (is_command_available()) {
-            cur_cmd = get_current_command();
+        next_state = IDLE;
 
-            //-- Update current state to the interrupted command
-            next_state = cur_cmd->cont_state;
-        } else {
-            next_state = IDLE;
-        }
         break;
     }
+
+    set_current_command_state(next_state);
 }
 
 /*
@@ -220,8 +216,8 @@ t_state decode_msg(void) {
 
     case STOPLOCK_MSG:
 
-        //-- We need to clear all current commands that are running so we do not return to them after
-        clear_all_commands();
+        //-- We need to clear all other current commands that are running so we do not return to them after
+        clear_all_other_commands();
 
         next_state = set_current_command(STOPLOCK, STOPLOCK_MSG << 9);
         break;
@@ -238,4 +234,41 @@ t_state decode_msg(void) {
     }
 
     return next_state;
+}
+
+/*
+ * Halts the main motor and Engages Pawl
+ */
+static int abort_action(void) {
+   int err;
+
+   //-- Halt motor operation
+  stopMainMotor();
+
+   //-- Have motor on before we move pawls
+   turnOnMotor();
+
+    //-- Engage pawl
+   err = engageBoth(INIT_PAWL);
+   if (err < 0) {
+       return -1;
+   }
+
+   //-- Perform this function until either error or returns 1
+   do {
+       err = engageBoth(RUN_PAWL);
+
+       //-- If there something is wrong error
+       if (err < 0) {
+           return -2;
+       }
+
+       //-- 100 Hz
+       __delay_cycles(10000);
+   } while (err != 1);
+
+   //-- Turn off power to the main motor
+   turnOffMotor();
+
+   return 0;
 }
