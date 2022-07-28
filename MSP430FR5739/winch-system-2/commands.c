@@ -46,6 +46,8 @@ void add_new_command(unsigned int rx_msg) {
         new_cmd->active = 1;
 
         num_active_cmd++;
+
+        print_cmd_list();
     }
 }
 
@@ -72,6 +74,8 @@ void end_command(void) {
 
         //-- Space is free to use by any other command
         cur_cmd->active = 0;
+
+        print_cmd_list();
     }
 }
 
@@ -100,12 +104,6 @@ void end_command(void) {
  */
 t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
     t_cmd * current_cmd;
-
-    if (is_busy(cmd_type)) {
-        cmd_type = ACTION_BUSY;
-        tx_msg = BUSY_MSG << 9;
-    }
-
     current_cmd = get_current_command();
 
     if (current_cmd == (t_cmd*)0) {
@@ -113,9 +111,16 @@ t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
         return IDLE;
     }
 
-    current_cmd->type = cmd_type;
-    current_cmd->state = lookup_cmd_start_state(cmd_type);
-    current_cmd->tx_msg = tx_msg;
+    if (is_busy(cmd_type)) {
+        current_cmd->type = ACTION_BUSY;
+        current_cmd->state = SEND_TO_UCCM;
+        current_cmd->tx_msg = BUSY_MSG << 9;
+    } else {
+        current_cmd->type = cmd_type;
+        current_cmd->state = lookup_cmd_start_state(cmd_type);
+        current_cmd->tx_msg = tx_msg;
+        active_cmd |= cmd_type;
+    }
 
     return current_cmd->state;
 }
@@ -402,12 +407,15 @@ static unsigned int max_active_reached(void) {
  */
 void clear_all_other_commands(void) {
     t_cmd * current_cmd = (t_cmd *)(0);
-    int i;
+    unsigned int i;
 
-    for (i = 0; i <= ACTIVE_CMD_SIZE; i++) {
+    for (i = 0; i < ACTIVE_CMD_SIZE; i++) {
         current_cmd = &cmd_list[i];
 
         if (i != cmd_index) {
+
+            num_active_cmd -= current_cmd->active;
+
             current_cmd->active = 0;
             active_cmd &= ~current_cmd->type;
         }
@@ -463,3 +471,31 @@ static unsigned int is_cmd_index_active(unsigned index) {
     }
     else return 0;
 }
+
+/**
+ *  Name:       print_cmd_list
+ *
+ *
+ *  Purpose:    for debugging to see the commands in the list
+ *
+ *  Params:     none
+ *
+ *  Return:     none
+ *
+ *  Notes:      make sure debug is enabled in debug.h
+ */
+static void print_cmd_list(void) {
+    int i;
+    t_cmd current_cmd;
+
+    V_PRINTF("\n\r")
+
+    for (i = 0; i < ACTIVE_CMD_SIZE; i++) {
+        current_cmd = cmd_list[i];
+        V_PRINTF("| %s ", current_cmd.active ? "ACTIVE" : "EMPTY")
+    }
+
+    V_PRINTF("| num_active: %d\r\n", num_active_cmd)
+}
+
+

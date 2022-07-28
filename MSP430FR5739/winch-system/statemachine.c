@@ -29,7 +29,6 @@ void handle_commands(void) {
             clearReady();
         }
 
-
         statemachine();
 
         //-- 100 Hz
@@ -46,7 +45,8 @@ static void statemachine(void) {
     switch(get_current_command_state()) {
 
     case IDLE:
-        //--  Idle wait
+        //--  Idle turn off cpu
+        LPM4;
         break;
 
     case DECODE:
@@ -197,11 +197,13 @@ t_state decode_msg(void) {
             break;
         }
 
-        err = setDirectionToMove(setpos);
+        if (is_busy(SET_POS)) {
+            err = setDirectionToMove(setpos);
 
-        if (err < 0) {
-            next_state = set_current_command(STOPLOCK, 0xFF);
-            break;
+            if (err < 0) {
+                next_state = set_current_command(STOPLOCK, 0xFF);
+                break;
+            }
         }
 
         next_state = set_current_command(SET_POS, setpos);

@@ -8,7 +8,7 @@
 #ifndef DEBUG_H_
 #define DEBUG_H_
 
-#define DBG 1
+#define DBG 0
 #define V_PRINTF(format, ...) while(DBG) {dbg_printf(format, ##__VA_ARGS__); break;}
 
 // used to send messages over UART for debugging purposes

@@ -86,43 +86,42 @@ __interrupt void USCI_A1_ISR(void) {
     case 0x02: // Vector 2: UCRXIFG
         c = UCA1RXBUF;
         switch(uart_state) {
-            case PROCESS:
-                if (c == '\n' || c == '\r') {
-                    // SUCCES as line ends after 2 bytes
-                    rx_flag = 1;
+        case PROCESS:
+            if (c == '\n' || c == '\r') {
+                // SUCCES as line ends after 2 bytes
+                rx_flag = 1;
+                rxbuf[bufpos] = '\0';
+                LPM4_EXIT;
+                uart_state = READ;
+            } else {
+                uart_state = WAIT;
+            }
 
-                    rxbuf[bufpos] = '\0';
-                    uart_state = READ;
-                } else {
-                    uart_state = WAIT;
-                }
+            bufpos = 0;
+            break;
 
+        case READ:
+
+            if (c == '\n' || c == '\r') {
+                // Less than 2 bytes - reset buffer position
                 bufpos = 0;
-                break;
+            } else {
+                rxbuf[bufpos] = c;
+                bufpos++;
 
-            case READ:
+                if (bufpos == RXBUF_LEN) uart_state = PROCESS; // If we reached the end of the buffer Proccess it
+            }
 
-                if (c == '\n' || c == '\r') {
-                    // Less than 2 bytes - reset buffer position
-                    bufpos = 0;
-                } else {
-                    rxbuf[bufpos] = c;
-                    bufpos++;
+            break;
 
-                    if (bufpos == RXBUF_LEN) uart_state = PROCESS; // If we reached the end of the buffer Proccess it
-                }
+        case WAIT:
+            // Go to read state when receiving end of character and rx_flag is not set
+            if ((c == '\n' || c == '\r') && !rx_flag) uart_state = READ;
+            break;
 
-                break;
-
-            case WAIT:
-                // Go to read state when receiving end of character and rx_flag is not set
-                if ((c == '\n' || c == '\r') && !rx_flag) uart_state = READ;
-                break;
-
-            default:
-                break;
+        default:
+            break;
         }
-
         break;
     case 0x03: // Vector 4: UCTXIFG
         break;

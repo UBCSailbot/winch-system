@@ -272,5 +272,3 @@ __interrupt void TIMER1_B0_ISR (void) {
     TB1CCTL0 &= ~CCIFG;     // Clear interrupt flag
     TB1CTL &= ~(TBIFG);
 }
-
-

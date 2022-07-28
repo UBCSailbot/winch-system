@@ -9,6 +9,7 @@ CMD_SRCS += \
 ../lnk_msp430fr5739.cmd 
 
 C_SRCS += \
+../commands.c \
 ../debug.c \
 ../gearmotor.c \
 ../main.c \
@@ -19,6 +20,7 @@ C_SRCS += \
 ../uart.c 
 
 C_DEPS += \
+./commands.d \
 ./debug.d \
 ./gearmotor.d \
 ./main.d \
@@ -29,6 +31,7 @@ C_DEPS += \
 ./uart.d 
 
 OBJS += \
+./commands.obj \
 ./debug.obj \
 ./gearmotor.obj \
 ./main.obj \
@@ -39,6 +42,7 @@ OBJS += \
 ./uart.obj 
 
 OBJS__QUOTED += \
+"commands.obj" \
 "debug.obj" \
 "gearmotor.obj" \
 "main.obj" \
@@ -49,6 +53,7 @@ OBJS__QUOTED += \
 "uart.obj" 
 
 C_DEPS__QUOTED += \
+"commands.d" \
 "debug.d" \
 "gearmotor.d" \
 "main.d" \
@@ -59,6 +64,7 @@ C_DEPS__QUOTED += \
 "uart.d" 
 
 C_SRCS__QUOTED += \
+"../commands.c" \
 "../debug.c" \
 "../gearmotor.c" \
 "../main.c" \

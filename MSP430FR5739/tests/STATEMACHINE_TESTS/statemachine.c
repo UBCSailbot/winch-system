@@ -10,44 +10,35 @@
 #include "debug.h"
 #include "motor.h"
 //-- #include "uart.h" in statemachine.h
-
-unsigned int state = IDLE;
-t_cmd * cur_cmd;
+unsigned int wait_count = 0;
 
 void handle_commands(void) {
-    char msg[RXBUF_LEN] = "";
-    unsigned int rx_flag;
+    char rx_msg[RXBUF_LEN] = "";
 
     while (1) {
-        rx_flag = isReady();
-        //-- If rx_ready we have an incoming msg
-        if (rx_flag) {
 
-            //-- If the maximum active command threshold is not reached
-            if (!max_active_reached()) {
-                getMsg(msg);
+        if (isReady()) {
 
-                //-- NEED TO DO THIS SO WE CAN RETURN - If no command active then this does not do anything
-                save_current_state(state);
+            getMsg(rx_msg);
 
-                state = DECODE;
-            }
+            add_new_command((unsigned int) rx_msg[0] | ((unsigned int) rx_msg[1]) << 8);
 
-            //-- We ignore the rx_ready flag if max active threshold has been reached
             clearReady();
         }
 
-        statemachine(msg);
+
+        statemachine();
 
         //-- 100 Hz
         __delay_cycles(10000);
     }
 }
 
-static void statemachine(char msg[RXBUF_LEN]) {
-    int next_state;
+static void statemachine(void) {
+    t_state next_state = IDLE;
+    unsigned int tx_msg;
 
-    switch(state) {
+    switch(get_current_command_state()) {
 
     case IDLE:
         /*  DO NOTHING */
@@ -56,11 +47,11 @@ static void statemachine(char msg[RXBUF_LEN]) {
 
         V_PRINTF("IDLE")
 
-
+        LPM4;
         break;
 
     case DECODE:
-        next_state = decode_msg(msg);
+        next_state = decode_msg();
         break;
 
     case TURN_MOTOR_ON:
@@ -94,7 +85,14 @@ static void statemachine(char msg[RXBUF_LEN]) {
 
         V_PRINTF("WAIT_MOTOR -> ")
 
-        next_state = START_ENGAGE_PAWL;
+        // Wait 10s
+        if (++wait_count >= 100) {
+            wait_count=0;
+            next_state = START_ENGAGE_PAWL;
+        } else {
+            next_state = WAIT_MOTOR;
+        }
+
         break;
 
     case START_ENGAGE_PAWL:
@@ -128,27 +126,19 @@ static void statemachine(char msg[RXBUF_LEN]) {
 
         V_PRINTF("SEND_TO_UCCM \r\n")
 
+        tx_msg = get_current_tx_msg();
+
         //-- Send message to the UCCM
-        uccm_send("%c%c\r\n", cur_cmd->msg >> 8, cur_cmd->msg & 0xFF);
+        uccm_send("%c%c\r\n", tx_msg >> 8, tx_msg & 0xFF);
 
         //-- Removes current command from the list
         end_command();
 
-        //-- If we have another command resume otherwise go to IDLE
-        if (is_command_available()) {
-
-            cur_cmd = get_current_command();
-
-            //-- Update next state to the interrupted command
-            next_state = cur_cmd->cont_state;
-        } else {
-
-            next_state = IDLE;
-        }
+        next_state = IDLE;
         break;
     }
 
-    state = next_state;
+    set_current_command_state(next_state);
 }
 
 /*
@@ -163,69 +153,66 @@ static void statemachine(char msg[RXBUF_LEN]) {
  *      - UNDEF
  *      - ACTION_BUSY
  */
-static int decode_msg(char msg[2]) {
+t_state decode_msg(void) {
     unsigned int pos, setpos;
-    unsigned int next_state = IDLE;
+    int err;
+    t_state next_state = IDLE;
+    unsigned int rx_msg = get_current_rx_msg();
 
     // The first bytes xxxx_xxx0 ignoring the least significant bit is the identifier
-    switch((int) (msg[0]) >> 1) {
+    switch((rx_msg & 0xFF) >> 1) {
 
     case SETPOS_MSG:
+        V_PRINTF("SETPOS ->")
 
         //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
-        setpos = 180;
+        setpos = (rx_msg & 0x1) << 8 | (rx_msg >> 8);
 
-        //-- If this action is busy we dont calculate pos and dir but create a busy command instead
-        if (!is_busy(SET_POS) && setpos <= 360) {
-
-            setpos |= SETPOS_MSG << 9;
-            next_state = TURN_MOTOR_ON;
-
-        } else {
-
-            //-- If we are here it is either busy or pos > 360. new_command automaticaly sets uccm_msg
-            //-- for busy therefore we set pos to an error msg
-            setpos = 0xFF;
-            next_state = SEND_TO_UCCM;
+        if (setpos > 360) {
+            next_state = set_current_command(UNDEF, 0xFF00);
+            break;
         }
 
-        //-- Sets uccm_msg - pos. If busy then the command is automatically set to busy
-        cur_cmd = new_command(SET_POS, setpos);
+        if (is_busy(SET_POS)) {
+            err = setDirectionToMove(setpos);
+
+            if (err < 0) {
+                next_state = set_current_command(STOPLOCK, 0xFF);
+                break;
+            }
+        }
+
+        next_state = set_current_command(SET_POS, setpos);
         break;
 
     case QUERYPOS_MSG:
+        V_PRINTF("QUERYPOS ->")
 
-        pos = 180;
+        pos = getCurrentCachedPosition();
 
-        //-- data1: 0, data2: 0, uccm_msg: pot. If busy then command is set to busy type
-        cur_cmd = new_command(QUERY_POS, pos);
-
-        next_state = SEND_TO_UCCM;
+        next_state = set_current_command(QUERY_POS, pos);
         break;
 
     case STOPLOCK_MSG:
+        V_PRINTF("STOP&LOCK ->")
+        //-- We need to clear all other current commands that are running so we do not return to them after
+        clear_all_other_commands();
 
-        //-- We need to clear all current commands that are running so we do not return to them after
-        clear_all_commands();
-
-        cur_cmd = new_command(STOPLOCK, STOPLOCK_MSG << 9);
-
-        next_state = ABORT;
+        next_state = set_current_command(STOPLOCK, STOPLOCK_MSG << 9);
         break;
 
     case ALIVE_MSG:
+        V_PRINTF("ALIVE ->")
 
-        cur_cmd = new_command(ALIVE, 0x5555);
-
-        next_state = SEND_TO_UCCM;
+        next_state = set_current_command(ALIVE, 0x5555);
         break;
 
     default:            // UNDEF
 
-        cur_cmd = new_command(UNDEF, 0xFF00);
-
-        next_state = SEND_TO_UCCM;
+        V_PRINTF("UNDEF ->")
+        next_state = set_current_command(UNDEF, 0xFF00);
         break;
     }
+
     return next_state;
 }

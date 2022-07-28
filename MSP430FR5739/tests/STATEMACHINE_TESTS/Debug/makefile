@@ -10,6 +10,7 @@ GEN_OPTS__FLAG :=
 GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
+"./commands.obj" \
 "./debug.obj" \
 "./gearmotor.obj" \
 "./main.obj" \
@@ -163,8 +164,8 @@ STATEMACHINE_TESTS.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "debug.obj" "gearmotor.obj" "main.obj" "motor.obj" "pawl.obj" "spi.obj" "statemachine.obj" "uart.obj" 
-	-$(RM) "debug.d" "gearmotor.d" "main.d" "motor.d" "pawl.d" "spi.d" "statemachine.d" "uart.d" 
+	-$(RM) "commands.obj" "debug.obj" "gearmotor.obj" "main.obj" "motor.obj" "pawl.obj" "spi.obj" "statemachine.obj" "uart.obj" 
+	-$(RM) "commands.d" "debug.d" "gearmotor.d" "main.d" "motor.d" "pawl.d" "spi.d" "statemachine.d" "uart.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

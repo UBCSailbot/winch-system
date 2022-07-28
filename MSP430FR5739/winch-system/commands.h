@@ -24,7 +24,7 @@
 #define IDLE_CMD        64
 
 typedef struct cmd {
-    unsigned int    free;
+    unsigned int    active;
     unsigned int    type;
     t_state        state;
     unsigned int  rx_msg;       // FROM UCCM MSG
@@ -34,13 +34,7 @@ typedef struct cmd {
 static unsigned int active_cmd;
 static unsigned int cmd_index = 0;
 static unsigned int num_active_cmd = 0;
-static t_cmd cmd_list[ACTIVE_CMD_SIZE] = {
-                                          1,         // free
-                                          PREMATURE, // type
-                                          DECODE,    // state
-                                          0,         // rx_msg
-                                          0          // tx_msg
-};
+static t_cmd cmd_list[ACTIVE_CMD_SIZE];
 
 static const t_cmd idle_cmd =
 {
@@ -97,8 +91,8 @@ unsigned int get_current_rx_msg(void);
 //-- Increments to the next available command
 static void find_next_active_cmd(void);
 
-//-- Checks if the current command being pointed to by index is free
-static unsigned int is_cmd_index_free(unsigned index);
+//-- Checks if the current command being pointed to by index is active
+static unsigned int is_cmd_index_active(unsigned index);
 
 //-- Looks up what the starting state of the command being ran is
 static t_state lookup_cmd_start_state(unsigned int cmd_type);

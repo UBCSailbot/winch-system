@@ -36,6 +36,4 @@ void clearReady(void);
 void getMsg(char* msg);
 
 
-
-
 #endif /* UART_H_ */
