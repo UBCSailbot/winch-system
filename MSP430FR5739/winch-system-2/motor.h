@@ -23,9 +23,17 @@
 #define CLOCKWISE 1
 #define ANTICLOCKWISE 2
 
-//-- Counts - 88 Hz PWM
-#define UPPER_COUNT 11364
-#define MID_COUNT 5682
+//-- Counts - 352 Hz PWM
+#define UPPER_COUNT_FAST 2842
+#define MID_COUNT_FAST 1421
+
+//-- Counts - 176 Hz PWM
+#define UPPER_COUNT_MID 5682
+#define MID_COUNT_MID 2841
+
+////-- 44 Hz PWM
+#define UPPER_COUNT_SLOW 22727
+#define MID_COUNT_SLOW 11364
 
 //-- Range 410 to 3685 therefore POT_SCALAR = (3685 - 410)/360
 #define POT_SCALAR 9
@@ -40,6 +48,12 @@
 //-- FUNCTION MACROS
 #define CALC_POS(X) ( (X - POT_OFFSET) / POT_SCALAR )
 #define CALC_VOLT(X) ( (X * POT_SCALAR) + POT_OFFSET )
+
+typedef enum motor_speed {
+    MMOTOR_FAST,
+    MMOTOR_MID,
+    MMOTOR_SLOW
+} motor_speed_t;
 
 //-- State of the main motor
 typedef struct motor_status_struct {
@@ -90,6 +104,9 @@ int setDirectionToMove(unsigned int setpoint);
 
 // Get saved direction value from the last call to setDirectionToMove
 unsigned int getCurrentCachedDirectionToMove(void);
+
+// Sets the speed of the motor by changing the timer counts
+void setMotorSpeed(motor_speed_t speed_sel);
 
 
 #endif /* MOTOR_H_ */

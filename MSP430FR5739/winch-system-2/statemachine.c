@@ -108,6 +108,8 @@ static void statemachine(void) {
             next_state = START_PAWL;
         } else if (ret_val == 1) {
             next_state = START_ENGAGE_PAWL;
+        } else {
+            next_state = WAIT_MOTOR;
         }
         break;
 
@@ -197,7 +199,7 @@ t_state decode_msg(void) {
             break;
         }
 
-        if (is_busy(SET_POS)) {
+        if (!is_busy(SET_POS)) {
             err = setDirectionToMove(setpos);
 
             if (err < 0) {

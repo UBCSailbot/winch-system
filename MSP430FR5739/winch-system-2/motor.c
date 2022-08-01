@@ -37,9 +37,9 @@ void init_Main_Motor(void) {
     P3SEL0 |= STEP;
     P3OUT &= ~STEP;
 
+    setMotorSpeed(MMOTOR_SLOW);
+
     //-- TB1 reg 1 timer setup
-    TB1CCR0 = UPPER_COUNT - 1;
-    TB1CCR1 = MID_COUNT;
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
     TB1CTL |= TBSSEL_2;             // SMCLK 1 Mhz
 
@@ -71,6 +71,8 @@ int incrementMainMotor(int dir, int increment) {
     }
 
     motor_increment = increment;
+
+    setMotorSpeed(MMOTOR_SLOW);
 
     startMainMotor();
 
@@ -117,6 +119,8 @@ int setMainMotorPosition(unsigned int phase) {
 
         //-- Init the tries to 0
         motor_tries = 0;
+
+        setMotorSpeed(MMOTOR_FAST);
 
         startMainMotor();
 
@@ -250,6 +254,29 @@ int setDirectionToMove(unsigned int setpoint) {
     }
 
     return temp_direction != motor_stat.direction;
+}
+
+void setMotorSpeed(motor_speed_t speed_sel) {
+    switch(speed_sel) {
+    case MMOTOR_FAST:
+        //-- TB1 reg 1 timer setup
+        TB1CCR0 = UPPER_COUNT_FAST - 1;
+        TB1CCR1 = MID_COUNT_FAST;
+        break;
+
+    case MMOTOR_MID:
+        //-- TB1 reg 1 timer setup
+        TB1CCR0 = UPPER_COUNT_MID - 1;
+        TB1CCR1 = MID_COUNT_MID;
+        break;
+
+    case MMOTOR_SLOW:
+    default:
+        //-- TB1 reg 1 timer setup
+        TB1CCR0 = UPPER_COUNT_SLOW - 1;
+        TB1CCR1 = MID_COUNT_SLOW;
+        break;
+    }
 }
 
 
