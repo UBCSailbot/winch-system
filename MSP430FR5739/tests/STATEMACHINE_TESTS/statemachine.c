@@ -37,6 +37,7 @@ void handle_commands(void) {
 static void statemachine(void) {
     t_state next_state = IDLE;
     unsigned int tx_msg;
+    int ret_val;
 
     switch(get_current_command_state()) {
 
@@ -78,16 +79,29 @@ static void statemachine(void) {
 
         V_PRINTF("START_MOTOR -> ")
 
-        next_state = WAIT_MOTOR;
+        ret_val = setMainMotorPosition(INIT_MMOTOR);
+        if (ret_val < 0) {
+            //-- ERROR
+            set_current_tx_msg(0xFF);
+            next_state = ABORT;
+        } else{
+            next_state = WAIT_MOTOR;
+        }
         break;
 
     case WAIT_MOTOR:
 
         V_PRINTF("WAIT_MOTOR -> ")
 
-        // Wait 10s
-        if (++wait_count >= 100) {
-            wait_count=0;
+        ret_val = setMainMotorPosition(RUN_MMOTOR);
+        if (ret_val < 0) {
+            //-- ERROR
+            set_current_tx_msg(0xFF);
+            next_state = ABORT;
+        } else if (ret_val == 2) {
+            //-- Change sate to START_PAWLs
+            next_state = START_PAWL;
+        } else if (ret_val == 1) {
             next_state = START_ENGAGE_PAWL;
         } else {
             next_state = WAIT_MOTOR;
@@ -168,12 +182,14 @@ t_state decode_msg(void) {
         //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
         setpos = (rx_msg & 0x1) << 8 | (rx_msg >> 8);
 
+        V_PRINTF(" (setpos: %d) ", setpos)
         if (setpos > 360) {
             next_state = set_current_command(UNDEF, 0xFF00);
             break;
         }
 
-        if (is_busy(SET_POS)) {
+        if (!is_busy(SET_POS)) {
+            V_PRINTF("Setdir")
             err = setDirectionToMove(setpos);
 
             if (err < 0) {

@@ -103,28 +103,24 @@ void test_receiveSPI(void) {
 
         receive_hallsensors(&pawl_left, &cam, &pawl_right);
 
-        V_PRINTF("[%s] RIGHT: Pawl left: %x, CAM: %d, Pawl_right: %x \r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
-
         __delay_cycles(DELAY);
 
+        V_PRINTF("[%s] RIGHT: Pawl left: %x, CAM: %d, Pawl_right: %x \r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
         //-- Move to the left
         startGearMotor(0, speeds[index], timeout[index]);
         while(isGearMotorOn());
 
         receive_hallsensors(&pawl_left, &cam, &pawl_right);
 
-        V_PRINTF("[%s] LEFT: Pawl left: %x, CAM: %d, Pawl_right: %x\r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
-
         __delay_cycles(DELAY);
 
+        V_PRINTF("[%s] LEFT: Pawl left: %x, CAM: %d, Pawl_right: %x\r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
         //-- Move to the center
         startGearMotor(1, speeds[index], timeout[index]/(2*(index+1)));
         while(isGearMotorOn());
 
         receive_hallsensors(&pawl_left, &cam, &pawl_right);
-
-        V_PRINTF("[%s] CENTER: Pawl left: %x, CAM: %d, Pawl_right: %x\r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
-
         __delay_cycles(DELAY);
+        V_PRINTF("[%s] CENTER: Pawl left: %x, CAM: %d, Pawl_right: %x\r\n\0", speeds_str[index], pawl_left, cam, pawl_right);
     }
 }

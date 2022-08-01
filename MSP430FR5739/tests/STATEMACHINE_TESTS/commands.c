@@ -26,7 +26,7 @@ void add_new_command(unsigned int rx_msg) {
 
     if ( !max_active_reached() ) {
 
-        for (i = 0; i <= ACTIVE_CMD_SIZE; i++) {
+        for (i = 0; i < ACTIVE_CMD_SIZE; i++) {
             if ( !is_cmd_index_active(i)) {
                 new_cmd = &cmd_list[i];
                 break;
@@ -107,11 +107,13 @@ t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
     current_cmd = get_current_command();
 
     if (current_cmd == (t_cmd*)0) {
+        V_PRINTF("-> GOTO IDLE \r\n")
         //-- No current command available
         return IDLE;
     }
 
     if (is_busy(cmd_type)) {
+        V_PRINTF(" BUSY ->")
         current_cmd->type = ACTION_BUSY;
         current_cmd->state = SEND_TO_UCCM;
         current_cmd->tx_msg = BUSY_MSG << 9;
@@ -163,12 +165,12 @@ static t_cmd * get_current_command(void) {
  *
  *  Return:     none
  *
- *  Notes:      NOP if current command is not active
+ *  Notes:      NOP if current command is not active and if setting to IDLE state
  */
 void set_current_command_state(t_state state) {
     t_cmd * cur_cmd = get_current_command();
 
-    if (cur_cmd != (t_cmd*)0) {
+    if (cur_cmd != (t_cmd*)0 && state != IDLE) {
         cur_cmd->state = state;
     }
 }
@@ -197,6 +199,7 @@ t_state get_current_command_state(void) {
     current_cmd = get_current_command();
 
     if (current_cmd == (t_cmd *)0) {
+        V_PRINTF("-> GOTO IDLE \r\n")
         current_state = IDLE;
     } else {
         current_state = current_cmd->state;
@@ -495,7 +498,7 @@ static void print_cmd_list(void) {
         V_PRINTF("| %s ", current_cmd.active ? "ACTIVE" : "EMPTY")
     }
 
-    V_PRINTF("| num_active: %d\r\n", num_active_cmd)
+    V_PRINTF("| num_active: %d active_cmds: %x\r\n", num_active_cmd, active_cmd)
 }
 
 

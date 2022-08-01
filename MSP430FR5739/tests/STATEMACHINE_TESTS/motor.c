@@ -95,7 +95,7 @@ int setMainMotorPosition(unsigned int phase) {
         if (motor_stat.setpoint > 360) return -1;
 
         //-- Motor should have already gone through the TURN_MOTOR_ON state
-        if (!isMotorOn()) return -2;
+        //if (!isMotorOn()) return -2;
 
         //-- Set DIR pin
         switch(motor_stat.direction) {
