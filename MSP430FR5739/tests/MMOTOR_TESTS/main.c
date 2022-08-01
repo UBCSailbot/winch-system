@@ -9,11 +9,12 @@ enum test_type
 {
     MOVE_MOTOR,
     MOTOR_POS,
-    GET_POS
+    GET_POS,
+    TURN_ON_MOTOR
 };
 
 //-- SELECT TEST TO BE PERFORMED HERE
-enum test_type test_sel = MOVE_MOTOR;
+enum test_type test_sel = MOTOR_POS;
 
 //-- CONTROL
 #define INCREMENT 44
@@ -21,6 +22,7 @@ enum test_type test_sel = MOVE_MOTOR;
 void test_mainMotorIncrement(void);
 void test_mainMotorPosition(void);
 void test_getCurrentPosition(void);
+void test_turnOnMotor(void);
 
 /**
  * main.c
@@ -46,6 +48,9 @@ int main(void)
 	    break;
 	case GET_POS:
 	    test_getCurrentPosition();
+	    break;
+	case TURN_ON_MOTOR:
+	    test_turnOnMotor();
 	    break;
 	}
 
@@ -83,7 +88,11 @@ void test_mainMotorIncrement(void) {
 void test_mainMotorPosition(void) {
     V_PRINTF("TEST main motor position \r\n");
 
-    int err = setMainMotorPosition(360);
+    int err = setMainMotorPosition(0);
+
+    __delay_cycles(2000000);
+
+    setMainMotorPosition(360);
 
     V_PRINTF("ERROR: %d", err);
 }
@@ -96,6 +105,13 @@ void test_getCurrentPosition(void) {
         __delay_cycles(1000000);
     }
 
+}
+
+void test_turnOnMotor(void) {
+    V_PRINTF("TEST turn on motor\r\n");
+
+    //-- Enable motor through motor controller
+    P1OUT |= ON_MOTOR;
 }
 
 

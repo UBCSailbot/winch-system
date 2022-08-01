@@ -34,8 +34,8 @@ void init_Main_Motor(void) {
     P3OUT &= ~STEP;
 
     //-- TB1 reg 1 timer setup
-    TB1CCR0 = UPPER_COUNT - 1;
-    TB1CCR1 = MID_COUNT;
+    TB1CCR0 = UPPER_COUNT_FAST - 1;
+    TB1CCR1 = MID_COUNT_FAST;
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
     TB1CTL |= TBSSEL_2;             // SMCLK 1 Mhz
 
