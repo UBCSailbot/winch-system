@@ -46,7 +46,7 @@ static void statemachine(void) {
 
     case IDLE:
         //--  Idle turn off cpu
-        LPM4;
+        LPM3;
         break;
 
     case DECODE:

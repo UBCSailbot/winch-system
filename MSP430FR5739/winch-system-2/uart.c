@@ -94,7 +94,7 @@ __interrupt void USCI_A1_ISR(void) {
                 rxbuf[bufpos] = '\0';
 
                 // Exit LPM4 mode
-                LPM4_EXIT;
+                LPM3_EXIT;
                 uart_state = READ;
             } else {
                 uart_state = WAIT;
