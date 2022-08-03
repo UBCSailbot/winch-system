@@ -85,16 +85,13 @@ __interrupt void USCI_A1_ISR(void) {
         break;
     case 0x02: // Vector 2: UCRXIFG
         c = UCA1RXBUF;
-
         switch(uart_state) {
         case PROCESS:
             if (c == '\n' || c == '\r') {
                 // SUCCES as line ends after 2 bytes
                 rx_flag = 1;
                 rxbuf[bufpos] = '\0';
-
-                // Exit LPM4 mode
-                LPM4_EXIT;
+                LPM0_EXIT;
                 uart_state = READ;
             } else {
                 uart_state = WAIT;

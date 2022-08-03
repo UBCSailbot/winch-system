@@ -26,8 +26,9 @@ void add_new_command(unsigned int rx_msg) {
 
     if ( !max_active_reached() ) {
 
-        for (i = 0; i <= ACTIVE_CMD_SIZE; i++) {
+        for (i = 0; i < ACTIVE_CMD_SIZE; i++) {
             if ( !is_cmd_index_active(i)) {
+                V_PRINTF("ADD cmd to (%d)", i)
                 new_cmd = &cmd_list[i];
                 break;
             }
@@ -100,22 +101,25 @@ void end_command(void) {
  */
 t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
     t_cmd * current_cmd;
-
-    if (is_busy(cmd_type)) {
-        cmd_type = ACTION_BUSY;
-        tx_msg = BUSY_MSG << 9;
-    }
-
     current_cmd = get_current_command();
 
     if (current_cmd == (t_cmd*)0) {
+        //V_PRINTF("-> GOTO IDLE \r\n")
         //-- No current command available
         return IDLE;
     }
 
-    current_cmd->type = cmd_type;
-    current_cmd->state = lookup_cmd_start_state(cmd_type);
-    current_cmd->tx_msg = tx_msg;
+    if (is_busy(cmd_type)) {
+        V_PRINTF(" BUSY ->")
+        current_cmd->type = ACTION_BUSY;
+        current_cmd->state = SEND_TO_UCCM;
+        current_cmd->tx_msg = BUSY_MSG << 9;
+    } else {
+        current_cmd->type = cmd_type;
+        current_cmd->state = lookup_cmd_start_state(cmd_type);
+        current_cmd->tx_msg = tx_msg;
+        active_cmd |= cmd_type;
+    }
 
     return current_cmd->state;
 }
@@ -131,21 +135,39 @@ t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
  *  Return:     pointer to the current active command
  *              nullptr - if current command is not active or cmd_index out of bounds
  *
- *  Notes:      check if t_cmd is not a nullptr before using it
+ *  Notes:      check if t_cmd returned is not a nullptr before using it
  */
 static t_cmd * get_current_command(void) {
+    return get_command(cmd_index);
+}
 
-    if (cmd_index >= ACTIVE_CMD_SIZE) {
+/**
+ *  Name:       get_command
+ *
+ *
+ *  Purpose:    gets the command at a certain index if that command is active
+ *
+ *  Params:     index - the index the command is located
+ *
+ *  Return:     pointer to the active command
+ *              nullptr - if current command is not active or cmd_index out of bounds
+ *
+ *  Notes:      check if t_cmd returned is not a nullptr before using it
+ */
+static t_cmd * get_command(unsigned int index) {
+    t_cmd * current_cmd;
+
+    if (index >= ACTIVE_CMD_SIZE) {
         return (t_cmd*)0;
     }
 
-    t_cmd * current_cmd = &cmd_list[cmd_index];
+    current_cmd = &cmd_list[index];
 
     if (!current_cmd->active) {
         return (t_cmd*)0;
     }
 
-    return &cmd_list[cmd_index];
+    return current_cmd;
 }
 
 /**
@@ -158,12 +180,12 @@ static t_cmd * get_current_command(void) {
  *
  *  Return:     none
  *
- *  Notes:      NOP if current command is not active
+ *  Notes:      NOP if current command is not active and if setting to IDLE state
  */
 void set_current_command_state(t_state state) {
     t_cmd * cur_cmd = get_current_command();
 
-    if (cur_cmd != (t_cmd*)0) {
+    if (cur_cmd != (t_cmd*)0 && state != IDLE) {
         cur_cmd->state = state;
     }
 }
@@ -192,6 +214,7 @@ t_state get_current_command_state(void) {
     current_cmd = get_current_command();
 
     if (current_cmd == (t_cmd *)0) {
+        //V_PRINTF("-> GOTO IDLE \r\n")
         current_state = IDLE;
     } else {
         current_state = current_cmd->state;
@@ -220,10 +243,13 @@ static t_state lookup_cmd_start_state(unsigned int cmd_type) {
     switch(cmd_type) {
 
     case SET_POS:
-        start_state = TURN_MOTOR_ON;
+        start_state = SET_DIRECTION;
         break;
 
     case QUERY_POS:
+        start_state = GET_POSITION;
+        break;
+
     case ALIVE:
     case UNDEF:
     case ACTION_BUSY:
@@ -402,12 +428,15 @@ static unsigned int max_active_reached(void) {
  */
 void clear_all_other_commands(void) {
     t_cmd * current_cmd = (t_cmd *)(0);
-    int i;
+    unsigned int i;
 
-    for (i = 0; i <= ACTIVE_CMD_SIZE; i++) {
-        current_cmd = &cmd_list[i];
+    for (i = 0; i < ACTIVE_CMD_SIZE; i++) {
+        current_cmd = get_command(i);
 
-        if (i != cmd_index) {
+        if (current_cmd != (t_cmd *)0 && i != cmd_index) {
+
+            num_active_cmd -= current_cmd->active;
+
             current_cmd->active = 0;
             active_cmd &= ~current_cmd->type;
         }
@@ -458,8 +487,38 @@ static void find_next_active_cmd(void) {
  *  Notes:      ensure that index < ACTIVE_CMD_SIZE
  */
 static unsigned int is_cmd_index_active(unsigned index) {
-    if (index < ACTIVE_CMD_SIZE) {
-        return cmd_list[index].active;
+    t_cmd * command;
+
+    command = get_command(index);
+
+    if (command != (t_cmd *)0) {
+        return command->active;
     }
     else return 0;
 }
+
+/**
+ *  Name:       print_cmd_list
+ *
+ *
+ *  Purpose:    for debugging to see the commands in the list
+ *
+ *  Params:     none
+ *
+ *  Return:     none
+ *
+ *  Notes:      make sure debug is enabled in debug.h
+ */
+void print_cmd_list(void) {
+    int i;
+
+    V_PRINTF("\n\r")
+
+    for (i = 0; i < ACTIVE_CMD_SIZE; i++) {
+        V_PRINTF("|  (%d) ", is_cmd_index_active(i))
+    }
+
+    V_PRINTF("| num_active: %d active_cmds: %x\r\n", num_active_cmd, active_cmd)
+}
+
+

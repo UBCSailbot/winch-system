@@ -67,6 +67,9 @@ t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg);
 //-- Gets the command currently running
 static t_cmd * get_current_command(void);
 
+//-- Get the command pointed to at a certain index
+static t_cmd * get_command(unsigned int index);
+
 //-- Sets the current running state of the command
 void set_current_command_state(t_state state);
 
@@ -102,5 +105,8 @@ static unsigned int is_command_available(void);
 
 //-- Indicates if the max number of active commands have been reached
 static unsigned int max_active_reached(void);
+
+//-- Prints the command list
+void print_cmd_list(void);
 
 #endif /* COMMANDS_H_ */

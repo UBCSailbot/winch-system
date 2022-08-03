@@ -14,6 +14,56 @@
 
 //-- Include uart.h in header file
 
+static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
+{
+ // RUN_AGAIN       COMPLETE            ERROR           RESTART
+
+ //---- IDLE ----
+ {IDLE,              IDLE,               ERROR_STATE,          IDLE},
+
+ //---- DECODE ----
+ {DECODE,            IDLE,               ERROR_STATE,         ABORT},
+
+ //---- SET_DIRECTION ----
+ {SET_DIRECTION,     TURN_MOTOR_ON,      ERROR_STATE,         ABORT},
+
+ //---- TURN_MOTOR_ON ----
+ {TURN_MOTOR_ON,     START_PAWL,         ERROR_STATE,         ABORT},
+
+ //---- START_PAWL ----
+ {START_PAWL,        WAIT_PAWL,          ERROR_STATE,         ABORT},
+
+ //---- WAIT_PAWL ----
+ {WAIT_PAWL,         START_MOTOR,        ERROR_STATE,         ABORT},
+
+ //---- START_MOTOR ----
+ {START_MOTOR,       WAIT_MOTOR,         ERROR_STATE,         ABORT},
+
+ //---- WAIT_MOTOR ----
+ {WAIT_MOTOR,        START_ENGAGE_PAWL,  ERROR_STATE,         START_PAWL},
+
+ //---- START_ENGAGE_PAWL ----
+ {START_ENGAGE_PAWL, WAIT_ENGAGE_PAWL,   ERROR_STATE,         ABORT},
+
+ //---- WAIT_ENGAGE_PAWL ----
+ {WAIT_ENGAGE_PAWL,  TURN_MOTOR_OFF,     ERROR_STATE,         ABORT},
+
+ //---- TURN_MOTOR_OFF ----
+ {TURN_MOTOR_OFF,    SEND_TO_UCCM,       ERROR_STATE,         ABORT},
+
+ //---- GET_POSITION ----
+ {GET_POSITION,      SEND_TO_UCCM,       ERROR_STATE,         ABORT},
+
+ //---- ABORT ----
+ {ABORT,             SEND_TO_UCCM,       ERROR_STATE,         ABORT},
+
+ //---- SEND_TO_UCCM ----
+ {SEND_TO_UCCM,      IDLE,               ERROR_STATE,         ABORT},
+
+ //---- ERROR_STATE ----
+ {ERROR_STATE,      ABORT,               ABORT,               ABORT}
+};
+
 
 void handle_commands(void) {
     char rx_msg[RXBUF_LEN] = "";
@@ -38,106 +88,79 @@ void handle_commands(void) {
 
 
 static void statemachine(void) {
-    int ret_val = 0;
-    t_state next_state = IDLE;
+    t_ret_code ret_val = COMPLETE;
+    t_state current_state, next_state = IDLE;
     unsigned int tx_msg;
+    unsigned int rx_msg;
+    unsigned int pos, setpos;
 
-    switch(get_current_command_state()) {
+    switch( current_state = get_current_command_state()) {
 
     case IDLE:
         //--  Idle turn off cpu
-        LPM4;
+        LPM0;
         break;
 
     case DECODE:
         // Decode message and find next state
         next_state = decode_msg();
+
+        goto SKIP_NEXT_STATE_LOOKUP;
+
+    case SET_DIRECTION:
+        rx_msg = get_current_rx_msg();
+
+        //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
+        setpos = (rx_msg & 0x1) << 8 | (rx_msg >> 8);
+
+        if (setpos > 360) {
+            ret_val = ERROR;
+            break;
+        }
+
+        if (setDirectionToMove(setpos) < 0) {
+            ret_val = ERROR;
+            break;
+        }
+
+        set_current_tx_msg(setpos | (SETPOS_MSG << 9));
         break;
 
     case TURN_MOTOR_ON:
         turnOnMotor();
-        next_state = START_PAWL;
         break;
 
     //-- SET_POS states
     case START_PAWL:
-        //-- Send the direction data and initialize the PAWL
         ret_val = move_pawl(INIT_PAWL);
-        if (ret_val < 0) {
-            //-- ERROR
-            set_current_tx_msg(0xFF);
-            next_state = ABORT;
-        } else {
-            next_state = WAIT_PAWL;
-        }
         break;
 
     case WAIT_PAWL:
-        //-- Run pawl until action is complete. Action complete - 1, Run again - 0, Error < 0
         ret_val = move_pawl(RUN_PAWL);
-        if (ret_val < 0) {
-            //-- ERROR
-            set_current_tx_msg(0xFF);
-            next_state = ABORT;
-        } else if (ret_val == 1){
-            next_state = START_MOTOR;
-        }
         break;
 
     case START_MOTOR:
-        //-- Initialize motor functions
         ret_val = setMainMotorPosition(INIT_MMOTOR);
-        if (ret_val < 0) {
-            //-- ERROR
-            set_current_tx_msg(0xFF);
-            next_state = ABORT;
-        } else{
-            next_state = WAIT_MOTOR;
-        }
         break;
 
     case WAIT_MOTOR:
-        //-- Run motor until action is complete. Action complete - 1, Run again - 0, Error < 0
         ret_val = setMainMotorPosition(RUN_MMOTOR);
-        if (ret_val < 0) {
-            //-- ERROR
-            set_current_tx_msg(0xFF);
-            next_state = ABORT;
-        } else if (ret_val == 2) {
-            //-- Change sate to START_PAWLs
-            next_state = START_PAWL;
-        } else if (ret_val == 1) {
-            next_state = START_ENGAGE_PAWL;
-        }
         break;
 
     case START_ENGAGE_PAWL:
-        //-- Initialize Pawls to engage
         ret_val = engageBoth(INIT_PAWL);
-        if (ret_val < 0) {
-            //-- ERROR
-            set_current_tx_msg(0xFF);
-            next_state = ABORT;
-        } else {
-            next_state = WAIT_ENGAGE_PAWL;
-        }
         break;
 
     case WAIT_ENGAGE_PAWL:
-        //-- Run pawl control until both engaged. Action complete - 1, Run again - 0, Error < 0
         ret_val = engageBoth(RUN_PAWL);
-        if (ret_val < 0) {
-            //-- ERROR
-            set_current_tx_msg(0xFF);
-            next_state = ABORT;
-        } else if (ret_val == 1){
-            next_state = TURN_MOTOR_OFF;
-        }
         break;
 
     case TURN_MOTOR_OFF:
         turnOffMotor();
-        next_state = SEND_TO_UCCM;
+        break;
+
+    case ERROR_STATE:
+        set_current_tx_msg(0xFF);
         break;
 
     case ABORT:
@@ -145,8 +168,11 @@ static void statemachine(void) {
         if (abort_action() < 0) {
             //-- Perform a PUC reset?
         }
+        break;
 
-        next_state = SEND_TO_UCCM;
+    case GET_POSITION:
+        pos = getCurrentCachedPosition();
+        set_current_tx_msg(pos);
         break;
 
     case SEND_TO_UCCM:
@@ -157,11 +183,12 @@ static void statemachine(void) {
 
         //-- Removes current command from the list
         end_command();
-
-        next_state = IDLE;
-
         break;
     }
+
+    next_state = get_next_state(current_state, ret_val);
+
+SKIP_NEXT_STATE_LOOKUP:
 
     set_current_command_state(next_state);
 }
@@ -179,8 +206,6 @@ static void statemachine(void) {
  *      - ACTION_BUSY
  */
 t_state decode_msg(void) {
-    unsigned int pos, setpos;
-    int err;
     t_state next_state = IDLE;
     unsigned int rx_msg = get_current_rx_msg();
 
@@ -189,31 +214,12 @@ t_state decode_msg(void) {
 
     case SETPOS_MSG:
 
-        //-- Byte[0] 0000_000x << 8 + Byte[1] xxxx_xxxx
-        setpos = (rx_msg & 0x1) << 8 | (rx_msg >> 8);
-
-        if (setpos > 360) {
-            next_state = set_current_command(UNDEF, 0xFF00);
-            break;
-        }
-
-        if (is_busy(SET_POS)) {
-            err = setDirectionToMove(setpos);
-
-            if (err < 0) {
-                next_state = set_current_command(STOPLOCK, 0xFF);
-                break;
-            }
-        }
-
-        next_state = set_current_command(SET_POS, setpos);
+        next_state = set_current_command(SET_POS, 0x00);
         break;
 
     case QUERYPOS_MSG:
 
-        pos = getCurrentCachedPosition();
-
-        next_state = set_current_command(QUERY_POS, pos);
+        next_state = set_current_command(QUERY_POS, 0x00);
         break;
 
     case STOPLOCK_MSG:
@@ -273,4 +279,14 @@ static int abort_action(void) {
    turnOffMotor();
 
    return 0;
+}
+
+t_state get_next_state(t_state current_state, t_ret_code returned_code) {
+    t_state next_state = IDLE;
+
+    if (current_state < MAX_STATE && returned_code < MAX_RET_CODE) {
+        next_state = next_state_lookup_table[current_state][returned_code];
+    }
+
+    return next_state;
 }
