@@ -8,6 +8,8 @@
 #ifndef PAWL_H_
 #define PAWL_H_
 
+#include "return_codes.h"
+
 //-- Direction definitions
 #define REST 0
 #define CLOCKWISE 1
@@ -33,15 +35,15 @@
 #define RUN_PAWL    1
 
 //-- Move the main pawls depending on the cur_direction
-int move_pawl(unsigned int phase);
+t_ret_code move_pawl(unsigned int phase);
 
 //-- Disengages right pawl by controlling gear motor
-static int disengageRight(unsigned int phase);
+static t_ret_code disengageRight(unsigned int phase);
 
 //-- Disengages left pawl by controlling gear motor
-static int disengageLeft(unsigned int phase);
+static t_ret_code disengageLeft(unsigned int phase);
 
 //-- Disengages both pawls by controlling gear motor
-int engageBoth(unsigned int phase);
+t_ret_code engageBoth(unsigned int phase);
 
 #endif /* PAWL_H_ */
