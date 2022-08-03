@@ -6,12 +6,14 @@
  */
 #ifndef STATEMACHINE_H_
 #define STATEMACHINE_H_
-#include "uart.h"
 
+#include "uart.h"
+#include "return_codes.h"
 
 typedef enum States {
     IDLE,
     DECODE,
+    SET_DIRECTION,
     TURN_MOTOR_ON,
     START_PAWL,
     WAIT_PAWL,
@@ -20,8 +22,12 @@ typedef enum States {
     START_ENGAGE_PAWL,
     WAIT_ENGAGE_PAWL,
     TURN_MOTOR_OFF,
+    GET_POSITION,
     ABORT,
     SEND_TO_UCCM,
+    ERROR_STATE,
+
+    MAX_STATE
 } t_state;
 
 //-- UCCM MSGS
@@ -40,5 +46,11 @@ static void statemachine(void);
 
 //-- Decodes message sent from UCCM and outputs next state
 t_state decode_msg(void);
+
+//-- Abort functionality. Hault main motor, Engages pawl
+static int abort_action(void);
+
+//-- Uses a next state lookup to get the next state depending on the retunred code
+t_state get_next_state(t_state current_state, t_ret_code returned_code);
 
 #endif /* STATEMACHINE_H_ */

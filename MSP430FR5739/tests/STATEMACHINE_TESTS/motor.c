@@ -87,15 +87,15 @@ int incrementMainMotor(int dir, int increment) {
  *
  * Returns -1 when error and 0 when success and 1 if motor has reached setpoint
  */
-int setMainMotorPosition(unsigned int phase) {
+t_ret_code setMainMotorPosition(unsigned int phase) {
     int ret;
 
     if (phase == INIT_MMOTOR) {
 
-        if (motor_stat.setpoint > 360) return -1;
+        if (motor_stat.setpoint > 360) return ERROR;
 
         //-- Motor should have already gone through the TURN_MOTOR_ON state
-        //if (!isMotorOn()) return -2;
+        //if (!isMotorOn()) return ERROR;
 
         //-- Set DIR pin
         switch(motor_stat.direction) {
@@ -109,10 +109,10 @@ int setMainMotorPosition(unsigned int phase) {
 
         case REST:
             //-- Already at position
-            return 1;
+            return COMPLETE;
 
         default:
-            return -4;  // Action not completed
+            return ERROR;  // Action not completed
         }
 
         //-- Init the tries to 0
@@ -120,10 +120,12 @@ int setMainMotorPosition(unsigned int phase) {
 
         startMainMotor();
 
+        return COMPLETE;
+
     } else {    // PHASE == RUN_MMOTOR
 
         ret = setDirectionToMove(motor_stat.setpoint);
-        if (ret < 0) return -2;
+        if (ret < 0) return ERROR;
 
         if (motor_stat.direction == REST) {
 
@@ -132,7 +134,7 @@ int setMainMotorPosition(unsigned int phase) {
 
             //-- We don't want to power off the motor as it should retain its position until pawls are engaged
             //turnOffMotor();
-            return 1;
+            return COMPLETE;
         }
 
         // If the direction changed move back to Start Pawl
@@ -141,12 +143,11 @@ int setMainMotorPosition(unsigned int phase) {
             //-- This stops it from moving in the specified direction (Motor still powered)
             stopMainMotor();
 
-            return 2;
-            //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
+            return RESTART;
+            //if (++motor_tries > MAX_MOTOR_TRIES) return ERROR;
         }
+        return RUN_AGAIN;
     }
-
-    return 0;
 }
 
 void stopMainMotor(void) {

@@ -91,7 +91,7 @@ __interrupt void USCI_A1_ISR(void) {
                 // SUCCES as line ends after 2 bytes
                 rx_flag = 1;
                 rxbuf[bufpos] = '\0';
-                LPM4_EXIT;
+                LPM0_EXIT;
                 uart_state = READ;
             } else {
                 uart_state = WAIT;

@@ -8,6 +8,7 @@
 #ifndef MOTOR_H_
 #define MOTOR_H_
 
+#include "return_codes.h"
 
 #define STEP BIT4;
 #define DIR BIT2;
@@ -56,7 +57,7 @@ motor_stat_t motor_stat;
 void init_Main_Motor(void);
 
 //-- Moves the Main Motor either clockwise or anti-clockwise to a specified position (0 - 360)
-int setMainMotorPosition(unsigned int phase);
+t_ret_code setMainMotorPosition(unsigned int phase);
 
 //-- Increment motor by a certain amount
 int incrementMainMotor(int direction, int increment);
