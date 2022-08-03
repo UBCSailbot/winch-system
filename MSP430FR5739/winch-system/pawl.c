@@ -32,9 +32,9 @@ unsigned int dir = 0;
  *
  * Return: negative when error, 0 when success and 1 when pawl position reached
  */
-int move_pawl(unsigned int phase) {
+t_ret_code move_pawl(unsigned int phase) {
     unsigned int direction;
-    int ret = 0;
+    t_ret_code ret = COMPLETE;
 
     direction = getCurrentCachedDirectionToMove();
 
@@ -54,7 +54,7 @@ int move_pawl(unsigned int phase) {
     return ret;
 }
 
-static int disengageRight(unsigned int phase) {
+static t_ret_code disengageRight(unsigned int phase) {
     unsigned int pawl_right;
     int err;
     unsigned int spi_tries = 0;
@@ -63,11 +63,10 @@ static int disengageRight(unsigned int phase) {
         err = receive_hallsensors(NULL, NULL, &pawl_right);
 
         //-- Error checking to see if we could receive pawl_right data
-        if (err < 0) return -1;
+        if (err < 0) return ERROR;
 
         if (pawl_right <= RIGHT_THRES) {
-            //-- Already disengaged (Why?)
-            return 0;
+            return COMPLETE;
         }
 
         //-- Keeps track of the number of times the main motor rotated to unlock the pawls
@@ -76,11 +75,13 @@ static int disengageRight(unsigned int phase) {
         //-- Turn the motor on until it reaches
         startGearMotor(FORWARD, MEDIUM, 200);
 
+        return COMPLETE;
+
     } else {    //-- RUN_PAWL
 
         if (!isGearMotorOn() && !isMotorRunning()) {
             //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) return -3;
+            if (++motor_inc_tries > MAX_TRIES) return ERROR;
 
             incrementMainMotor(CLOCKWISE, 5);
 
@@ -91,21 +92,20 @@ static int disengageRight(unsigned int phase) {
 
         do{
             err = receive_hallsensors(NULL, NULL, &pawl_right);
-            if (++spi_tries > MAX_TRIES) return -4;
+            if (++spi_tries > MAX_TRIES) return ERROR;
         } while (err);
 
         if (pawl_right <= RIGHT_THRES) {
             stopGearMotor();
             while (isMotorRunning());
-            return 1;
+            return COMPLETE;
         }
 
+        return RUN_AGAIN;
     }
-
-    return 0;
 }
 
-static int disengageLeft(unsigned int phase) {
+static t_ret_code disengageLeft(unsigned int phase) {
     unsigned int pawl_left;
     unsigned int spi_tries = 0;
     int err;
@@ -115,22 +115,24 @@ static int disengageLeft(unsigned int phase) {
         err = receive_hallsensors(&pawl_left, NULL, NULL);
 
         //-- Error checking to see if we could receive pawl_right data
-        if (err < 0) return -1;
+        if (err < 0) return ERROR;
 
         if (pawl_left <= LEFT_THRES) {
             //-- Already disengaged (Why?)
-            return 0;
+            return COMPLETE;
         }
 
         motor_inc_tries = 0;
 
         startGearMotor(BACKWARD, MEDIUM, 200);
+
+        return COMPLETE;
     } else {    //-- RUN_PAWL
 
         if (!isGearMotorOn() && !isMotorRunning()) {
 
             //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) return -3;
+            if (++motor_inc_tries > MAX_TRIES) return ERROR;
 
             incrementMainMotor(ANTICLOCKWISE, 5);
 
@@ -140,20 +142,20 @@ static int disengageLeft(unsigned int phase) {
 
         do{
             err = receive_hallsensors(&pawl_left, NULL, NULL);
-            if (++spi_tries > MAX_TRIES) return -4;
+            if (++spi_tries > MAX_TRIES) return ERROR;
         } while (err);
 
         if (pawl_left <= LEFT_THRES) {
             stopGearMotor();
             while (isMotorRunning());
-            return 1;
+            return COMPLETE;
         }
-    }
 
-    return 0;
+        return RUN_AGAIN;
+    }
 }
 
-int engageBoth(unsigned int phase) {
+t_ret_code engageBoth(unsigned int phase) {
     int cam;
     int err;
     unsigned int spi_tries = 0;
@@ -165,11 +167,11 @@ int engageBoth(unsigned int phase) {
 
         err = receive_hallsensors(NULL, &cam, NULL);
 
-        if (err < 0) return -1;
+        if (err < 0) return ERROR;
 
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
             //-- Already disengaged (Why?)
-            return 0;
+            return COMPLETE;
         }
 
         if (cam > CAM_MID) {
@@ -184,18 +186,20 @@ int engageBoth(unsigned int phase) {
 
         startGearMotor(dir, SLOW, 1000);
 
+        return COMPLETE;
+
     } else {    //-- RUN_PAWL
 
 
         if (!isGearMotorOn()) {
-            if (++motor_inc_tries > MAX_TRIES) return -3;
+            if (++motor_inc_tries > MAX_TRIES) return ERROR;
 
             startGearMotor(dir, SLOW, 1000);
         }
 
         do{
             err = receive_hallsensors(NULL, &cam, NULL);
-            if (++spi_tries > MAX_TRIES) return -4;
+            if (++spi_tries > MAX_TRIES) return ERROR;
         } while (err == -1);
 
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
@@ -204,7 +208,7 @@ int engageBoth(unsigned int phase) {
             //-- Move in the reverse direction to counter-act inertia
             dir ^= FORWARD;
             startGearMotor(dir, SLOW, 75);
-            return 1;
+            return COMPLETE;
         }
 
         //-- If cam value is positive and dir is forward. Reverse
@@ -218,9 +222,8 @@ int engageBoth(unsigned int phase) {
             startGearMotor(dir, SLOW, 1000);
         }
 
+        return RUN_AGAIN;
     }
-
-    return 0;
 }
 
 

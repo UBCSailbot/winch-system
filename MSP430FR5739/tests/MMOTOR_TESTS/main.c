@@ -83,7 +83,7 @@ void test_mainMotorIncrement(void) {
 void test_mainMotorPosition(void) {
     V_PRINTF("TEST main motor position \r\n");
 
-    int err = setMainMotorPosition(360);
+    int err = setMainMotorPosition(160);
 
     V_PRINTF("ERROR: %d", err);
 }

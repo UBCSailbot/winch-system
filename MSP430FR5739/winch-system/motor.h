@@ -8,6 +8,8 @@
 #ifndef MOTOR_H_
 #define MOTOR_H_
 
+#include "return_codes.h"
+
 
 #define STEP BIT4;
 #define DIR BIT2;
@@ -23,9 +25,17 @@
 #define CLOCKWISE 1
 #define ANTICLOCKWISE 2
 
+//-- Counts - 352 Hz PWM
+#define UPPER_COUNT_FAST 2842
+#define MID_COUNT_FAST 1421
+
 //-- Counts - 176 Hz PWM
-#define UPPER_COUNT 5682
-#define MID_COUNT 2841
+#define UPPER_COUNT_MID 5682
+#define MID_COUNT_MID 2841
+
+////-- 44 Hz PWM
+#define UPPER_COUNT_SLOW 22727
+#define MID_COUNT_SLOW 11364
 
 //-- Range 410 to 3685 therefore POT_SCALAR = (3685 - 410)/360
 #define POT_SCALAR 9
@@ -40,6 +50,12 @@
 //-- FUNCTION MACROS
 #define CALC_POS(X) ( (X - POT_OFFSET) / POT_SCALAR )
 #define CALC_VOLT(X) ( (X * POT_SCALAR) + POT_OFFSET )
+
+typedef enum motor_speed {
+    MMOTOR_FAST,
+    MMOTOR_MID,
+    MMOTOR_SLOW
+} motor_speed_t;
 
 //-- State of the main motor
 typedef struct motor_status_struct {
@@ -56,7 +72,7 @@ motor_stat_t motor_stat;
 void init_Main_Motor(void);
 
 //-- Moves the Main Motor either clockwise or anti-clockwise to a specified position (0 - 360)
-int setMainMotorPosition(unsigned int phase);
+t_ret_code setMainMotorPosition(unsigned int phase);
 
 //-- Increment motor by a certain amount
 int incrementMainMotor(int direction, int increment);
@@ -90,6 +106,9 @@ int setDirectionToMove(unsigned int setpoint);
 
 // Get saved direction value from the last call to setDirectionToMove
 unsigned int getCurrentCachedDirectionToMove(void);
+
+// Sets the speed of the motor by changing the timer counts
+void setMotorSpeed(motor_speed_t speed_sel);
 
 
 #endif /* MOTOR_H_ */

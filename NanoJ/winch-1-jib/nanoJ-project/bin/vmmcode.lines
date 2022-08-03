@@ -1,0 +1,41 @@
+Decoded dump of debug contents of section .debug_line:
+
+CU: C:\Plug & Drive Studio\PNDS-2.1.3-x86\workspace\NanoJ project\gen/types.h:
+File name                            Line number    Starting address
+
+CU: C:\Plug & Drive Studio\PNDS-2.1.3-x86\workspace\NanoJ project\gen\mappings/winch.cpp:
+File name                            Line number    Starting address
+winch.cpp                                     22           0x8008410
+
+winch.cpp                                     25           0x8008414
+winch.cpp                                     28           0x8008422
+winch.cpp                                     32           0x800842e
+winch.cpp                                     32           0x8008442
+winch.cpp                                     33           0x8008450
+winch.cpp                                     34           0x8008456
+winch.cpp                                     34           0x800846a
+winch.cpp                                     35           0x8008478
+winch.cpp                                     37           0x800847c
+winch.cpp                                     21           0x8008480
+winch.cpp                                     47           0x8008484
+
+winch.cpp                                     49           0x8008488
+winch.cpp                                     52           0x8008494
+winch.cpp                                     53           0x8008496
+winch.cpp                                     52           0x800849a
+winch.cpp                                     57           0x80084ae
+winch.cpp                                     60           0x80084ba
+winch.cpp                                     61           0x80084bc
+winch.cpp                                     60           0x80084c0
+winch.cpp                                     65           0x80084d4
+winch.cpp                                     68           0x80084e0
+winch.cpp                                     69           0x80084e2
+winch.cpp                                     68           0x80084e6
+winch.cpp                                     72           0x80084fa
+winch.cpp                                     73           0x8008506
+winch.cpp                                     75           0x8008508
+
+winch.cpp                                     77           0x800850c
+winch.cpp                                     79           0x8008518
+winch.cpp                                     80           0x8008524
+

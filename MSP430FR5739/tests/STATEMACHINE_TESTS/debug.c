@@ -10,9 +10,10 @@
 #include "debug.h"
 #include "uart.h"
 
+
 void dbg_printf(const char *format, ...) {
     va_list args;
-    char str[50] = "";
+    char str[100] = "";
 
     va_start(args, format);
 

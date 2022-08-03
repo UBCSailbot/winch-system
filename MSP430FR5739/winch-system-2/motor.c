@@ -37,9 +37,9 @@ void init_Main_Motor(void) {
     P3SEL0 |= STEP;
     P3OUT &= ~STEP;
 
+    setMotorSpeed(MMOTOR_SLOW);
+
     //-- TB1 reg 1 timer setup
-    TB1CCR0 = UPPER_COUNT - 1;
-    TB1CCR1 = MID_COUNT;
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
     TB1CTL |= TBSSEL_2;             // SMCLK 1 Mhz
 
@@ -72,6 +72,8 @@ int incrementMainMotor(int dir, int increment) {
 
     motor_increment = increment;
 
+    setMotorSpeed(MMOTOR_SLOW);
+
     startMainMotor();
 
     TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
@@ -87,15 +89,15 @@ int incrementMainMotor(int dir, int increment) {
  *
  * Returns -1 when error and 0 when success and 1 if motor has reached setpoint
  */
-int setMainMotorPosition(unsigned int phase) {
+t_ret_code setMainMotorPosition(unsigned int phase) {
     int ret;
 
     if (phase == INIT_MMOTOR) {
 
-        if (motor_stat.setpoint > 360) return -1;
+        if (motor_stat.setpoint > 360) return ERROR;
 
         //-- Motor should have already gone through the TURN_MOTOR_ON state
-        if (!isMotorOn()) return -2;
+        if (!isMotorOn()) return ERROR;
 
         //-- Set DIR pin
         switch(motor_stat.direction) {
@@ -109,21 +111,25 @@ int setMainMotorPosition(unsigned int phase) {
 
         case REST:
             //-- Already at position
-            return 1;
+            return COMPLETE;
 
         default:
-            return -4;  // Action not completed
+            return ERROR;  // Action not completed
         }
 
         //-- Init the tries to 0
         motor_tries = 0;
 
+        setMotorSpeed(MMOTOR_FAST);
+
         startMainMotor();
+
+        return COMPLETE;
 
     } else {    // PHASE == RUN_MMOTOR
 
         ret = setDirectionToMove(motor_stat.setpoint);
-        if (ret < 0) return -2;
+        if (ret < 0) return ERROR;
 
         if (motor_stat.direction == REST) {
 
@@ -132,7 +138,7 @@ int setMainMotorPosition(unsigned int phase) {
 
             //-- We don't want to power off the motor as it should retain its position until pawls are engaged
             //turnOffMotor();
-            return 1;
+            return COMPLETE;
         }
 
         // If the direction changed move back to Start Pawl
@@ -141,12 +147,12 @@ int setMainMotorPosition(unsigned int phase) {
             //-- This stops it from moving in the specified direction (Motor still powered)
             stopMainMotor();
 
-            return 2;
+            return RESTART;
             //if (++motor_tries > MAX_MOTOR_TRIES) return -5;
         }
-    }
 
-    return 0;
+        return RUN_AGAIN;
+    }
 }
 
 void stopMainMotor(void) {
@@ -252,6 +258,29 @@ int setDirectionToMove(unsigned int setpoint) {
     return temp_direction != motor_stat.direction;
 }
 
+void setMotorSpeed(motor_speed_t speed_sel) {
+    switch(speed_sel) {
+    case MMOTOR_FAST:
+        //-- TB1 reg 1 timer setup
+        TB1CCR0 = UPPER_COUNT_FAST - 1;
+        TB1CCR1 = MID_COUNT_FAST;
+        break;
+
+    case MMOTOR_MID:
+        //-- TB1 reg 1 timer setup
+        TB1CCR0 = UPPER_COUNT_MID - 1;
+        TB1CCR1 = MID_COUNT_MID;
+        break;
+
+    case MMOTOR_SLOW:
+    default:
+        //-- TB1 reg 1 timer setup
+        TB1CCR0 = UPPER_COUNT_SLOW - 1;
+        TB1CCR1 = MID_COUNT_SLOW;
+        break;
+    }
+}
+
 
 #pragma vector = TIMER1_B0_VECTOR;
 __interrupt void TIMER1_B0_ISR (void) {
@@ -272,5 +301,3 @@ __interrupt void TIMER1_B0_ISR (void) {
     TB1CCTL0 &= ~CCIFG;     // Clear interrupt flag
     TB1CTL &= ~(TBIFG);
 }
-
-

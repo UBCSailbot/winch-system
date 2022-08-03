@@ -10,7 +10,7 @@ map U32 inputReg4 as input 0x60FD:00
 
 #define OFF 0
 #define ON 1
-#define MASK 0x80000
+#define MASK 0x100000
 
 void start_motor(void);
 void stop_motor(void);
