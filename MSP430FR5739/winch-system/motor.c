@@ -6,7 +6,6 @@
  */
 #include <msp430.h>
 #include "motor.h"
-#include "spi.h"
 
 int motor_increment;
 unsigned int motor_tries = 0;
