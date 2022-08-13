@@ -39,8 +39,8 @@
 #define MID_COUNT_SLOW 11364
 
 //-- Each rotation of the motor is +410 mV
-//-- Range 1230 to 2670 therefore POT_SCALAR = (POT_MAX_VALUE - POT_MIN_VALUE)/360
-#define POT_SCALAR 4
+//-- Range 820 to 3278 therefore POT_SCALAR = (POT_MAX_VALUE - POT_MIN_VALUE)/360
+#define POT_SCALAR 6
 #define POT_OFFSET POT_MIN_VALUE
 
 #define MAX_MOTOR_TRIES 3

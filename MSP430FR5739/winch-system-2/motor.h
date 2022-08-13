@@ -9,6 +9,7 @@
 #define MOTOR_H_
 
 #include "return_codes.h"
+#include "spi.h"
 
 
 #define STEP BIT4;
@@ -37,9 +38,9 @@
 #define UPPER_COUNT_SLOW 22727
 #define MID_COUNT_SLOW 11364
 
-//-- Range 410 to 3685 therefore POT_SCALAR = (3685 - 410)/360
+//-- Range 410 to 3650 therefore POT_SCALAR = (3650 - 410)/360
 #define POT_SCALAR 9
-#define POT_OFFSET 410
+#define POT_OFFSET POT_MIN_VALUE
 
 #define MAX_MOTOR_TRIES 3
 
