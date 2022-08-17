@@ -119,7 +119,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         //-- Init the tries to 0
         motor_tries = 0;
 
-        setMotorSpeed(MMOTOR_FAST);
+        setMotorSpeed(MMOTOR_MID);
 
         startMainMotor();
 
@@ -239,7 +239,6 @@ unsigned int getCurrentCachedDirectionToMove(void) {
 int setDirectionToMove(unsigned int setpoint) {
     int err;
     unsigned int temp_direction;
-
     temp_direction = motor_stat.direction;
 
     motor_stat.setpoint = setpoint;

@@ -66,7 +66,7 @@ typedef struct motor_status_struct {
     unsigned int setpoint;
 } motor_stat_t;
 
-motor_stat_t motor_stat;
+static motor_stat_t motor_stat;
 
 
 //-- Initializes main motor functionality and interrupts

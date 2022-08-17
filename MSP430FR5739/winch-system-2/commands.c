@@ -28,7 +28,6 @@ void add_new_command(unsigned int rx_msg) {
 
         for (i = 0; i < ACTIVE_CMD_SIZE; i++) {
             if ( !is_cmd_index_active(i)) {
-                V_PRINTF("ADD cmd to (%d)", i)
                 new_cmd = &cmd_list[i];
                 break;
             }

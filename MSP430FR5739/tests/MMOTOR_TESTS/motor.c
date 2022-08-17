@@ -91,8 +91,11 @@ int setMainMotorPosition(int position) {
     if (position > 360 || position < 0) return -1;
 
     //-- Receive Pot voltage and determine the direction
-    err = receive_potentiometer(&voltage);
-    if (err < 0) return -2;
+    do {
+        err = receive_potentiometer(&voltage);
+
+    } while (err < 0);
+
 
     if (voltage == setpoint) {
         //-- Position Reached
@@ -128,8 +131,10 @@ int setMainMotorPosition(int position) {
      * Get data at 1kHz frequency
      */
     do {
-        err = receive_potentiometer(&voltage);
-        if (err < 0) return -2;
+        do {
+            err = receive_potentiometer(&voltage);
+
+        } while (err < 0);
 
         if (direction == CLOCKWISE && voltage < setpoint || direction == ANTICLOCKWISE && voltage > setpoint) {
             //-- Toggle the DIR pin

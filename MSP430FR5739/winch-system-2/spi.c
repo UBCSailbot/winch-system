@@ -110,16 +110,21 @@ int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_rig
  */
 int receive_potentiometer(unsigned int* pot_data) {
     int tries = 0;
-    unsigned int pot_data_value = *pot_data;
+    unsigned int pot_data_value;
 
     do {
         P3OUT &= ~CS_POT;
-        *pot_data = spi_io(0x55, 2, CS_POT);
+        pot_data_value = spi_io(0x55, 2, CS_POT);
         P3OUT |= CS_POT;
         //V_PRINTF("POT data: %d \r\n", *pot_data);
 
         if (++tries > MAX_POT_TRIES) {
-            if (pot_data_value > POT_MAX_VALUE) {
+
+            if (pot_data_value == 0xFFFF) {
+                V_PRINTF("NO_POT");
+                return -1;
+            }
+            else if (pot_data_value > POT_MAX_VALUE) {
                 pot_data_value = POT_MAX_VALUE;
             } else {
                 pot_data_value = POT_MIN_VALUE;
@@ -130,7 +135,7 @@ int receive_potentiometer(unsigned int* pot_data) {
 
     } while (pot_data_value > POT_MAX_VALUE || pot_data_value < POT_MIN_VALUE);
 
-
+    *pot_data = pot_data_value;
     return 0;
 }
 
