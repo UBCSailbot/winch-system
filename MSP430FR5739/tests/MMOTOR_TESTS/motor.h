@@ -36,6 +36,9 @@
 #define CALC_POS(X) ( (X - POT_OFFSET) / POT_SCALAR )
 #define CALC_VOLT(X) ( (X * POT_SCALAR) + POT_OFFSET )
 
+//-- The number of steps until checking motor status
+#define STEP_COUNT_FOR_MOTOR_CHECK  220
+
 //-- Initializes main motor functionality and interrupts
 void init_Main_Motor(void);
 
@@ -52,5 +55,7 @@ int isMotorOn(void);
 
 // Returns negative if error otherwise position between 0-360
 unsigned int getCurrentPosition(void);
+
+unsigned int checkMotorFault(void);
 
 #endif /* MOTOR_H_ */

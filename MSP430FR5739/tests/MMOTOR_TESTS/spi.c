@@ -108,7 +108,7 @@ int receive_potentiometer(unsigned int* pot_data) {
         P3OUT &= ~CS_POT;
         *pot_data = spi_io(0x55, 2, CS_POT);
         P3OUT |= CS_POT;
-        V_PRINTF("POT data: %d \r\n", *pot_data);
+        //V_PRINTF("POT data: %d \r\n", *pot_data);
 
         if (++tries > MAX_POT_TRIES) return -1;
 
