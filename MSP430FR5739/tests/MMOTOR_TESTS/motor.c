@@ -96,7 +96,7 @@ int setMainMotorPosition(int position) {
     int tries = 0;
 
     setpoint = CALC_VOLT(position);
-    prev_position = position;
+    prev_position = getCurrentPosition();
 
     if (position > 360 || position < 0) return -1;
 
@@ -259,7 +259,7 @@ __interrupt void TIMER1_B1_ISR (void) {
                 break;
             }
 
-            if ( diff > 6 + 2 || diff < 6 - 2 ){
+            if ( diff > 6 + 1 || diff < 6 - 1 ){
                 difference = diff;
                 fault = 1;
             }
