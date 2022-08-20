@@ -24,8 +24,8 @@
 #define ANTICLOCKWISE 2
 
 //-- Counts - 88 Hz PWM
-#define UPPER_COUNT 11364
-#define MID_COUNT 5682
+#define UPPER_COUNT 5682
+#define MID_COUNT 2841
 
 //-- Range 410 to 3685 therefore POT_SCALAR = (3685 - 410)/360
 #define POT_SCALAR 9

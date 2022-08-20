@@ -6,9 +6,11 @@
  */
 #include <msp430.h>
 #include "motor.h"
+#include "debug.h"
 
 int motor_increment;
 unsigned int motor_tries = 0;
+int difference;
 
 /**
  * P2.2 DIR: 1 forward and 0 backward TODO: confirm
@@ -131,7 +133,10 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
 
     } else {    // PHASE == RUN_MMOTOR
 
-        if (checkMotorFaultAndClear()) return ERROR;
+        if (checkMotorFaultAndClear()) {
+            V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
+            return ERROR;
+        }
 
         ret = setDirectionToMove(motor_stat.setpoint);
         if (ret < 0) return ERROR;
@@ -322,7 +327,7 @@ __interrupt void TIMER1_B0_ISR (void) {
 
 #pragma vector = TIMER1_B1_VECTOR;
 __interrupt void TIMER1_B1_ISR (void) {
-    int diff;
+    int diff = 0;
 
     switch(__even_in_range(TB1IV, 12)) {
     case 0x00:
@@ -335,11 +340,11 @@ __interrupt void TIMER1_B1_ISR (void) {
 
             switch (motor_stat.direction) {
             case CLOCKWISE:
-                diff = motor_tracker.last_position - motor_stat.position;
+                diff = motor_stat.position - motor_tracker.last_position;
                 break;
 
             case ANTICLOCKWISE:
-                diff = motor_stat.position - motor_tracker.last_position;
+                diff = motor_tracker.last_position - motor_stat.position;
                 break;
 
             case REST:
@@ -355,12 +360,14 @@ __interrupt void TIMER1_B1_ISR (void) {
             }
 
             motor_tracker.last_position = motor_stat.position;
+            difference = diff;
         }
         break;
 
     default:
         break;
     }
+
 
     TB1CCTL1 &= ~CCIFG;     // Clear interrupt flag
 }
