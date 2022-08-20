@@ -125,7 +125,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         //-- Init the tries to 0
         motor_tries = 0;
 
-        setMotorSpeed(MMOTOR_MID);
+        setMotorSpeed(MMOTOR_FAST);
 
         startMainMotor();
 
@@ -183,6 +183,8 @@ static void startMainMotor(void) {
 
     //-- Update the last known position before safety check occurs
     motor_tracker.last_position = motor_stat.position;
+
+    motor_tracker.steps = 0;
 
     TB1CCTL1 |= CCIE;               // Enable interrupts on reg 1
 }

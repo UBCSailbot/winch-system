@@ -167,6 +167,7 @@ static void statemachine(void) {
         //-- Primary action to stop winch functionality
         if (abort_action() < 0) {
             //-- Perform a PUC reset?
+            V_PRINTF("ABORT ERR\r\n");
         }
         break;
 
@@ -258,7 +259,7 @@ static int abort_action(void) {
 
     //-- Engage pawl
    err = engageBoth(INIT_PAWL);
-   if (err < 0) {
+   if (err == ERROR) {
        return -1;
    }
 
@@ -267,13 +268,13 @@ static int abort_action(void) {
        err = engageBoth(RUN_PAWL);
 
        //-- If there something is wrong error
-       if (err < 0) {
+       if (err == ERROR) {
            return -2;
        }
 
        //-- 100 Hz
        __delay_cycles(10000);
-   } while (err != 1);
+   } while (err != COMPLETE);
 
    //-- Turn off power to the main motor
    turnOffMotor();

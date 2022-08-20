@@ -109,8 +109,8 @@ int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_rig
  * Return -1 if voltage not in the range 500mV to 4500mV
  */
 int receive_potentiometer(unsigned int* pot_data) {
-    unsigned int tries = 0;
-    unsigned int pot_data_value = *pot_data;
+    int tries = 0;
+    unsigned int pot_data_value;
 
     do {
         P3OUT &= ~CS_POT;
@@ -118,9 +118,13 @@ int receive_potentiometer(unsigned int* pot_data) {
         P3OUT |= CS_POT;
         //V_PRINTF("POT data: %d \r\n", *pot_data);
 
-        if (++tries > POT_MAX_VALUE) {
-            //-- TBD: Return 0 and set pot_data to POT_MAX or MIN
-            if (pot_data_value > POT_MAX_VALUE) {
+        if (++tries > MAX_POT_TRIES) {
+
+            if (pot_data_value == 0xFFFF) {
+                V_PRINTF("NO_POT");
+                return -1;
+            }
+            else if (pot_data_value > POT_MAX_VALUE) {
                 pot_data_value = POT_MAX_VALUE;
             } else {
                 pot_data_value = POT_MIN_VALUE;
@@ -132,7 +136,6 @@ int receive_potentiometer(unsigned int* pot_data) {
     } while (pot_data_value > POT_MAX_VALUE || pot_data_value < POT_MIN_VALUE);
 
     *pot_data = pot_data_value;
-
     return 0;
 }
 
@@ -163,7 +166,7 @@ int configHall(unsigned int config) {
 
         if (++attempts > 4) return -1;
 
-
+        __delay_cycles(250000);
     } while (returned_config != config);
 
     return 0;

@@ -190,16 +190,12 @@ t_ret_code engageBoth(unsigned int phase) {
 
     } else {    //-- RUN_PAWL
 
-
-        if (!isGearMotorOn()) {
-            if (++motor_inc_tries > MAX_TRIES) return ERROR;
-
-            startGearMotor(dir, SLOW, 1000);
-        }
-
         do{
             err = receive_hallsensors(NULL, &cam, NULL);
-            if (++spi_tries > MAX_TRIES) return ERROR;
+            if (++spi_tries > MAX_TRIES) {
+                V_PRINTF("MAX_SPI: %d\r\n");
+                return ERROR;
+            }
         } while (err == -1);
 
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
@@ -207,6 +203,7 @@ t_ret_code engageBoth(unsigned int phase) {
 
             //-- Move in the reverse direction to counter-act inertia
             dir ^= FORWARD;
+
             startGearMotor(dir, SLOW, 75);
             return COMPLETE;
         }
@@ -217,9 +214,18 @@ t_ret_code engageBoth(unsigned int phase) {
 
             //-- toggle direction
             dir ^= FORWARD;
-
+            V_PRINTF("GM_DIR_CH: %d\r\n", dir);
             //-- Reverse gear motor
             startGearMotor(dir, SLOW, 1000);
+        }
+
+
+        if (!isGearMotorOn()) {
+            if (++motor_inc_tries > MAX_TRIES) return ERROR;
+
+            startGearMotor(dir, SLOW, 1000);
+
+            V_PRINTF("GM_DIR: %d\r\n", dir);
         }
 
         return RUN_AGAIN;

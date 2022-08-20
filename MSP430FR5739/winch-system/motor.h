@@ -53,6 +53,11 @@
 #define CALC_POS(X) ( (X - POT_OFFSET) / POT_SCALAR )
 #define CALC_VOLT(X) ( (X * POT_SCALAR) + POT_OFFSET )
 
+//-- The number of steps until checking motor status
+#define STEP_COUNT_FOR_MOTOR_CHECK  220
+#define EXPECTED_POS_DIFF     6
+
+
 typedef enum motor_speed {
     MMOTOR_FAST,
     MMOTOR_MID,
@@ -67,7 +72,15 @@ typedef struct motor_status_struct {
     unsigned int setpoint;
 } motor_stat_t;
 
+//-- Tracks the main motor rotations for fault detection
+typedef struct motor_tracker_struct {
+    unsigned int steps;
+    volatile unsigned int last_position;
+    volatile unsigned char fault;
+} motor_tracker_t;
+
 motor_stat_t motor_stat;
+static motor_tracker_t motor_tracker;
 
 
 //-- Initializes main motor functionality and interrupts
@@ -112,5 +125,7 @@ unsigned int getCurrentCachedDirectionToMove(void);
 // Sets the speed of the motor by changing the timer counts
 void setMotorSpeed(motor_speed_t speed_sel);
 
+// Checks if a fault occurs and clears it
+unsigned char checkMotorFaultAndClear(void);
 
 #endif /* MOTOR_H_ */

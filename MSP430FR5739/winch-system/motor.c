@@ -6,9 +6,11 @@
  */
 #include <msp430.h>
 #include "motor.h"
+#include "debug.h"
 
 int motor_increment;
 unsigned int motor_tries = 0;
+int difference;
 
 /**
  * P2.2 DIR: 1 forward and 0 backward TODO: confirm
@@ -24,6 +26,10 @@ void init_Main_Motor(void) {
     motor_stat.position = 0;
     motor_stat.direction = REST;
     motor_stat.setpoint = 180;
+
+    motor_tracker.fault = 0;
+    motor_tracker.last_position = 0;
+    motor_tracker.steps = 0;
 
     //-- Init DIR port to output
     P2DIR |= DIR;
@@ -127,6 +133,11 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
 
     } else {    // PHASE == RUN_MMOTOR
 
+        if (checkMotorFaultAndClear()) {
+            V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
+            return ERROR;
+        }
+
         ret = setDirectionToMove(motor_stat.setpoint);
         if (ret < 0) return ERROR;
 
@@ -160,6 +171,8 @@ void stopMainMotor(void) {
 
     TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode       [TBD: Look into these modes]
     TB1CCTL1 &= ~OUT;        // Force output to zero
+
+    TB1CCTL1 &= ~CCIE;
 }
 
 static void startMainMotor(void) {
@@ -167,6 +180,13 @@ static void startMainMotor(void) {
     TB1CTL |= TBCLR;                // Clear timer count
     TB1CTL |= MC_1;                 // Count up mode
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
+
+    //-- Update the last known position before safety check occurs
+    motor_tracker.last_position = motor_stat.position;
+
+    motor_tracker.steps = 0;
+
+    TB1CCTL1 |= CCIE;               // Enable interrupts on reg 1
 }
 
 void turnOnMotor(void) {
@@ -239,7 +259,6 @@ unsigned int getCurrentCachedDirectionToMove(void) {
 int setDirectionToMove(unsigned int setpoint) {
     int err;
     unsigned int temp_direction;
-
     temp_direction = motor_stat.direction;
 
     motor_stat.setpoint = setpoint;
@@ -280,6 +299,13 @@ void setMotorSpeed(motor_speed_t speed_sel) {
     }
 }
 
+unsigned char checkMotorFaultAndClear(void) {
+    unsigned char fault_tmp = motor_tracker.fault;
+    motor_tracker.fault = 0;
+
+    return fault_tmp;
+}
+
 
 #pragma vector = TIMER1_B0_VECTOR;
 __interrupt void TIMER1_B0_ISR (void) {
@@ -300,3 +326,51 @@ __interrupt void TIMER1_B0_ISR (void) {
     TB1CCTL0 &= ~CCIFG;     // Clear interrupt flag
     TB1CTL &= ~(TBIFG);
 }
+
+#pragma vector = TIMER1_B1_VECTOR;
+__interrupt void TIMER1_B1_ISR (void) {
+    int diff = 0;
+
+    switch(__even_in_range(TB1IV, 12)) {
+    case 0x00:
+        break;
+
+    case 0x02:              //-- TB1CCR1
+        if (++motor_tracker.steps == STEP_COUNT_FOR_MOTOR_CHECK)
+        {
+            motor_tracker.steps = 0;
+
+            switch (motor_stat.direction) {
+            case CLOCKWISE:
+                diff = motor_stat.position - motor_tracker.last_position;
+                break;
+
+            case ANTICLOCKWISE:
+                diff = motor_tracker.last_position - motor_stat.position;
+                break;
+
+            case REST:
+            default:
+                //-- VALIDATE THIS
+                diff = 0;
+                break;
+            }
+
+            if ( diff > EXPECTED_POS_DIFF + 1 || diff < EXPECTED_POS_DIFF - 1 ) {
+                motor_tracker.fault = 1;
+                TB1CCTL1 &= ~CCIE;
+            }
+
+            motor_tracker.last_position = motor_stat.position;
+            difference = diff;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+
+    TB1CCTL1 &= ~CCIFG;     // Clear interrupt flag
+}
+
