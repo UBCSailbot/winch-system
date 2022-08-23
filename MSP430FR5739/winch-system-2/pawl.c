@@ -38,6 +38,10 @@ t_ret_code move_pawl(unsigned int phase) {
 
     direction = getCurrentCachedDirectionToMove();
 
+    if (PJOUT & NFAULT) {
+        V_PRINTF("NFAULT");
+    }
+
     switch(direction) {
     case CLOCKWISE:
         ret = disengageLeft(phase);

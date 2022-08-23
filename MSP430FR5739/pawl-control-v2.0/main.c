@@ -51,7 +51,9 @@ int main(void)
 	            continue;
 	        }
 
-	        if ((err = move_pawl()) == 0) {
+	        move_pawl(INIT_PAWL, cur_direction);
+
+	        if ((err = move_pawl(RUN_PAWL, cur_direction)) == 0) {
 	                V_PRINTF("\r\nSUCCESS\r\n");
 	            }else {
 	                V_PRINTF("\r\nFAIL err: %d \r\n", err);

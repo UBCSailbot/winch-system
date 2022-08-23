@@ -1,4 +1,4 @@
-/*
+ /*
  * statemachine.c
  *
  *  Created on: Apr 25, 2022
@@ -164,6 +164,7 @@ static void statemachine(void) {
         break;
 
     case ABORT:
+        V_PRINTF("ABORT");
         //-- Primary action to stop winch functionality
         if (abort_action() < 0) {
             //-- Perform a PUC reset?
@@ -249,7 +250,7 @@ t_state decode_msg(void) {
  * Halts the main motor and Engages Pawl
  */
 static int abort_action(void) {
-   int err;
+   int ret;
 
    //-- Halt motor operation
   stopMainMotor();
@@ -258,23 +259,24 @@ static int abort_action(void) {
    turnOnMotor();
 
     //-- Engage pawl
-   err = engageBoth(INIT_PAWL);
-   if (err == ERROR) {
+   ret = engageBoth(INIT_PAWL);
+   if (ret == ERROR) {
        return -1;
    }
 
    //-- Perform this function until either error or returns 1
    do {
-       err = engageBoth(RUN_PAWL);
+       ret = engageBoth(RUN_PAWL);
 
        //-- If there something is wrong error
-       if (err == ERROR) {
+       if (ret == ERROR) {
            return -2;
        }
 
        //-- 100 Hz
        __delay_cycles(10000);
-   } while (err != COMPLETE);
+   } while (ret == RUN_AGAIN);
+
 
    //-- Turn off power to the main motor
    turnOffMotor();

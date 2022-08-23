@@ -190,6 +190,7 @@ static void startMainMotor(void) {
 }
 
 void turnOnMotor(void) {
+    V_PRINTF(" ONMOTOR ");
     P1OUT |= ON_MOTOR;
     motor_stat.power = ON;
 }
@@ -197,6 +198,7 @@ void turnOnMotor(void) {
 void turnOffMotor(void) {
     P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
     motor_stat.power = OFF;
+    V_PRINTF(" OFFMOTOR ");
 }
 
 int isMotorOn(void) {
