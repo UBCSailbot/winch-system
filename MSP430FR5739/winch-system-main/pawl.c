@@ -38,9 +38,10 @@ t_ret_code move_pawl(unsigned int phase) {
 
     direction = getCurrentCachedDirectionToMove();
 
-    if (PJIN & NFAULT) {
+    //-- Fault active low
+    if (!(PJIN & NFAULT)) {
         V_PRINTF("NFAULT");
-        return -1;
+        return ERROR;
     }
 
     switch(direction) {

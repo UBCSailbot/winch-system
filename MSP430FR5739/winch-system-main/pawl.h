@@ -21,7 +21,7 @@
 
 //-- Pawl threshold values
 #define RIGHT_THRES 0xfb00
-#define LEFT_THRES  0xf200
+#define LEFT_THRES  0xf580
 #define CAM_THRES_UPPER -200
 #define CAM_THRES_LOWER -400
 
