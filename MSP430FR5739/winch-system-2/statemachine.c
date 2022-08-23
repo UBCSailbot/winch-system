@@ -160,7 +160,7 @@ static void statemachine(void) {
         break;
 
     case ERROR_STATE:
-        set_current_tx_msg(0xFF);
+        set_current_tx_msg(ERROR_MSG);
         break;
 
     case ABORT:
