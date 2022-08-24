@@ -125,7 +125,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         //-- Init the tries to 0
         motor_tries = 0;
 
-        setMotorSpeed(MMOTOR_FAST);
+        setMotorSpeed(MMOTOR_MID);
 
         startMainMotor();
 
@@ -190,7 +190,6 @@ static void startMainMotor(void) {
 }
 
 void turnOnMotor(void) {
-    V_PRINTF(" ONMOTOR ");
     P1OUT |= ON_MOTOR;
     motor_stat.power = ON;
 }
@@ -198,7 +197,6 @@ void turnOnMotor(void) {
 void turnOffMotor(void) {
     P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
     motor_stat.power = OFF;
-    V_PRINTF(" OFFMOTOR ");
 }
 
 int isMotorOn(void) {

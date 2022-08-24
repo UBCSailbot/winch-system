@@ -125,7 +125,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         //-- Init the tries to 0
         motor_tries = 0;
 
-        setMotorSpeed(MMOTOR_FAST);
+        setMotorSpeed(MMOTOR_MID);
 
         startMainMotor();
 

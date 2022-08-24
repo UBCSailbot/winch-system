@@ -55,7 +55,7 @@
 
 //-- The number of steps until checking motor status
 #define STEP_COUNT_FOR_MOTOR_CHECK  220
-#define EXPECTED_POS_DIFF     6
+#define EXPECTED_POS_DIFF     8
 
 
 typedef enum motor_speed {

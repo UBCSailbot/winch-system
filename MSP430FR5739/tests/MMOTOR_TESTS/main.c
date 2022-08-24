@@ -1,4 +1,4 @@
-#include <msp430.h> 
+#include <msp430.h>
 #include "motor.h"
 #include "debug.h"
 #include "uart.h"

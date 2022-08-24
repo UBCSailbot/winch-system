@@ -34,6 +34,9 @@ int main(void)
 {
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
 
+    P1DIR |= BIT0;
+    P1OUT &= ~BIT0;
+
 	init();
 	V_PRINTF("MAIN\r\n");
 

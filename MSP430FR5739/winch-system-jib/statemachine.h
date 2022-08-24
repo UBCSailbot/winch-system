@@ -37,6 +37,8 @@ typedef enum States {
 #define ALIVE_MSG           0x04
 #define BUSY_MSG            0x08
 
+#define ERROR_MSG           0xFF00
+
 
 //-- Receive commands from the uccm. top level state machine
 void handle_commands(void);
