@@ -15,6 +15,7 @@
 
 unsigned int motor_inc_tries = 0;
 unsigned int dir = 0;
+char move_cam = 0;
 
 /**
  * Set the state of the paws to either engaged or disengaged
@@ -85,17 +86,6 @@ static t_ret_code disengageRight(unsigned int phase) {
 
     } else {    //-- RUN_PAWL
 
-        if (!isGearMotorOn() && !isMotorRunning()) {
-            //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) return ERROR;
-
-            incrementMainMotor(CLOCKWISE, 5);
-
-            //-- Start gear motor again
-            startGearMotor(FORWARD, MEDIUM, 200);
-        }
-
-
         do{
             err = receive_hallsensors(NULL, NULL, &pawl_right);
             if (++spi_tries > MAX_TRIES) return ERROR;
@@ -105,6 +95,16 @@ static t_ret_code disengageRight(unsigned int phase) {
             stopGearMotor();
             while (isMotorRunning());
             return COMPLETE;
+        }
+
+        if (!isGearMotorOn() && !isMotorRunning()) {
+            //-- If gear motor has timed out
+            if (++motor_inc_tries > MAX_TRIES) return ERROR;
+
+            incrementMainMotor(CLOCKWISE, 5);
+
+            //-- Start gear motor again
+            startGearMotor(FORWARD, MEDIUM, 200);
         }
 
         return RUN_AGAIN;
@@ -135,17 +135,6 @@ static t_ret_code disengageLeft(unsigned int phase) {
         return COMPLETE;
     } else {    //-- RUN_PAWL
 
-        if (!isGearMotorOn() && !isMotorRunning()) {
-
-            //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) return ERROR;
-
-            incrementMainMotor(ANTICLOCKWISE, 5);
-
-            //-- Start gear motor again
-            startGearMotor(BACKWARD, MEDIUM, 200);
-        }
-
         do{
             err = receive_hallsensors(&pawl_left, NULL, NULL);
             if (++spi_tries > MAX_TRIES) return ERROR;
@@ -155,6 +144,17 @@ static t_ret_code disengageLeft(unsigned int phase) {
             stopGearMotor();
             while (isMotorRunning());
             return COMPLETE;
+        }
+
+        if (!isGearMotorOn() && !isMotorRunning()) {
+
+            //-- If gear motor has timed out
+            if (++motor_inc_tries > MAX_TRIES) return ERROR;
+
+            incrementMainMotor(ANTICLOCKWISE, 5);
+
+            //-- Start gear motor again
+            startGearMotor(BACKWARD, MEDIUM, 200);
         }
 
         return RUN_AGAIN;
@@ -177,6 +177,7 @@ t_ret_code engageBoth(unsigned int phase) {
 
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
             //-- Already disengaged (Why?)
+            move_cam = 0;
             return COMPLETE;
         }
 
@@ -192,6 +193,7 @@ t_ret_code engageBoth(unsigned int phase) {
 
         startGearMotor(dir, SLOW, 1000);
 
+        move_cam = 1;
         return COMPLETE;
 
     } else {    //-- RUN_PAWL
@@ -207,10 +209,13 @@ t_ret_code engageBoth(unsigned int phase) {
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
             stopGearMotor();
 
-            //-- Move in the reverse direction to counter-act inertia
-            dir ^= FORWARD;
+            //-- Move in the reverse direction to counter-act inertia only if
+            if (move_cam) {
+                dir ^= FORWARD;
+                startGearMotor(dir, SLOW, 50);
+                move_cam = 0;
+            }
 
-            startGearMotor(dir, SLOW, 75);
             return COMPLETE;
         }
 

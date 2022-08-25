@@ -16,7 +16,7 @@
 //-- command types
 #define PREMATURE       0
 #define SET_POS         1
-#define QUERY_POS       2
+#define QUERY_POS       0
 #define STOPLOCK        4
 #define ALIVE           8
 #define UNDEF           16

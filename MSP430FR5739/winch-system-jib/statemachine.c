@@ -81,8 +81,8 @@ void handle_commands(void) {
 
         statemachine();
 
-        //-- 100 Hz
-        __delay_cycles(10000);
+        //-- 1000 Hz
+        __delay_cycles(1000);
     }
 }
 

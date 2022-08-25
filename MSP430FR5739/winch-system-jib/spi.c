@@ -149,8 +149,12 @@ int configHall(unsigned int config) {
     int returned_config = 0;
     int attempts = 0;
 
-
     do {
+
+        if (attempts > 0)
+        {
+            __delay_cycles(250000);
+        }
 
         P3OUT &= ~CS_HALL;
         //-- We receive the configuration value in the most significant 2 bytes
@@ -166,7 +170,6 @@ int configHall(unsigned int config) {
 
         if (++attempts > 4) return -1;
 
-        __delay_cycles(250000);
     } while (returned_config != config);
 
     return 0;

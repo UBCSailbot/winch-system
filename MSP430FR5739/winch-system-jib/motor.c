@@ -13,7 +13,7 @@ unsigned int motor_tries = 0;
 int difference;
 
 /**
- * P2.2 DIR: 1 forward and 0 backward TODO: confirm
+ * P2.2 DIR: 1 CLK and 0 ACLK
  *
  * P3.4 STEP: Uses TB1 CCR1 capture register
  */
@@ -169,7 +169,7 @@ void stopMainMotor(void) {
     TB1CTL &= ~MC_1;        // Hault PWM timer
     TB1CTL |= TBCLR;        // Clear timer count
 
-    TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode       [TBD: Look into these modes]
+    TB1CCTL1 &= ~OUTMOD_2;    // Output mode
     TB1CCTL1 &= ~OUT;        // Force output to zero
 
     TB1CCTL1 &= ~CCIE;
