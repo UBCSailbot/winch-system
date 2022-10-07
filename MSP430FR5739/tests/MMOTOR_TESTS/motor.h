@@ -24,8 +24,8 @@
 #define ANTICLOCKWISE 2
 
 //-- Counts - 88 Hz PWM
-#define UPPER_COUNT 11364
-#define MID_COUNT 5682
+#define UPPER_COUNT 5682
+#define MID_COUNT 2841
 
 //-- Range 410 to 3685 therefore POT_SCALAR = (3685 - 410)/360
 #define POT_SCALAR 9
@@ -35,6 +35,9 @@
 //-- FUNCTION MACROS
 #define CALC_POS(X) ( (X - POT_OFFSET) / POT_SCALAR )
 #define CALC_VOLT(X) ( (X * POT_SCALAR) + POT_OFFSET )
+
+//-- The number of steps until checking motor status
+#define STEP_COUNT_FOR_MOTOR_CHECK  220
 
 //-- Initializes main motor functionality and interrupts
 void init_Main_Motor(void);
@@ -52,5 +55,7 @@ int isMotorOn(void);
 
 // Returns negative if error otherwise position between 0-360
 unsigned int getCurrentPosition(void);
+
+unsigned int checkMotorFault(void);
 
 #endif /* MOTOR_H_ */

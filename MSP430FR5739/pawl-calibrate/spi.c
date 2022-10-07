@@ -29,7 +29,7 @@ void init_spi(void) {
     UCA0CTLW0 |= UCMST;         // Master mode
     UCA0CTLW0 |= UCMSB;         // MSB first
 
-    UCA0BRW |= 0x03;            // 1 Mhz/2
+    UCA0BRW |= 0x02;            // 1 Mhz/2
 
     //-- Port configuration
 
@@ -61,40 +61,47 @@ void init_spi(void) {
 /* Allows to receive Hallsensor data from either of the sensors.
  * If a certain sensor data is not needed pass in a NULL
  */
-void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
-
+int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_right) {
+    int err = 0;
     if (pawl_left != NULL) {
-        if (configHall(AIN0_CONF) < 0) {
-            *pawl_left = -1;
-        } else {
-            P3OUT &= ~CS_HALL;
-            //-- Receive Hall sensor data
-            *pawl_left = spi_io(0, 2, CS_HALL);
-            P3OUT |= CS_HALL;
+        if (!(active_config & AIN0_CONFID)) {
+            if (configHall(AIN0_CONF) < 0) {
+                err = -1;
+                return err;
+            } else active_config = AIN0_CONFID;
         }
+        P3OUT &= ~CS_HALL;
+        //-- Receive Hall sensor data
+        *pawl_left = spi_io(0, 2, CS_HALL);
+        P3OUT |= CS_HALL;
     }
 
     if (cam != NULL) {
-        if (configHall(AIN1_CONF) < 0) {
-            *cam = -1;
-        } else {
-            P3OUT &= ~CS_HALL;
-            //-- Receive Hall sensor data
-            *cam = spi_io(0, 2, CS_HALL);
-            P3OUT |= CS_HALL;
+        if (!(active_config & AIN1_CONFID)) {
+            if (configHall(AIN1_CONF) < 0) {
+                err = -1;
+                return err;
+            } else active_config = AIN1_CONFID;
         }
+        P3OUT &= ~CS_HALL;
+        //-- Receive Hall sensor data
+        *cam = spi_io(0, 2, CS_HALL);
+        P3OUT |= CS_HALL;
      }
 
     if (pawl_right != NULL) {
-        if (configHall(AIN2_CONF) < 0) {
-            *pawl_right = -1;
-        } else {
-            P3OUT &= ~CS_HALL;
-            //-- Receive Hall sensor data
-            *pawl_right = spi_io(0, 2, CS_HALL);
-            P3OUT |= CS_HALL;
+        if (!(active_config & AIN2_CONFID)) {
+            if (configHall(AIN2_CONF) < 0) {
+                err = -1;
+                return err;
+            } else active_config = AIN2_CONFID;
         }
+        P3OUT &= ~CS_HALL;
+        //-- Receive Hall sensor data
+        *pawl_right = spi_io(0, 2, CS_HALL);
+        P3OUT |= CS_HALL;
      }
+    return err;
 }
 
 /*
@@ -103,18 +110,32 @@ void receive_hallsensors(int* pawl_left, int* cam, int* pawl_right) {
  */
 int receive_potentiometer(unsigned int* pot_data) {
     int tries = 0;
+    unsigned int pot_data_value;
 
     do {
         P3OUT &= ~CS_POT;
-        *pot_data = spi_io(0x55, 2, CS_POT);
+        pot_data_value = spi_io(0x55, 2, CS_POT);
         P3OUT |= CS_POT;
         //V_PRINTF("POT data: %d \r\n", *pot_data);
 
-        if (++tries > MAX_POT_TRIES) return -1;
+        if (++tries > MAX_POT_TRIES) {
 
-    } while (*pot_data > POT_MAX_VALUE);
+            if (pot_data_value == 0xFFFF) {
+                V_PRINTF("NO_POT");
+                return -1;
+            }
+            else if (pot_data_value > POT_MAX_VALUE) {
+                pot_data_value = POT_MAX_VALUE;
+            } else {
+                pot_data_value = POT_MIN_VALUE;
+            }
 
+            break;
+        }
 
+    } while (pot_data_value > POT_MAX_VALUE || pot_data_value < POT_MIN_VALUE);
+
+    *pot_data = pot_data_value;
     return 0;
 }
 
@@ -159,10 +180,10 @@ int configHall(unsigned int config) {
  * bytes - number of bytes being sent
  * enable - the slave device being communicated with in P3
  */
-static int spi_io(int data, int bytes, int chipSel) {
+static unsigned int spi_io(unsigned int data, int bytes, int chipSel) {
     int rx_buf, offset;
-    int rx_data = 0;
-    int tmp;
+    unsigned int rx_data = 0;
+    unsigned int tmp;
     int i = 1;
 
 

@@ -1,4 +1,4 @@
-#include <msp430.h> 
+#include <msp430.h>
 #include "motor.h"
 #include "debug.h"
 #include "uart.h"
@@ -9,18 +9,20 @@ enum test_type
 {
     MOVE_MOTOR,
     MOTOR_POS,
-    GET_POS
+    GET_POS,
+    INC_GET_POS
 };
 
 //-- SELECT TEST TO BE PERFORMED HERE
-enum test_type test_sel = MOVE_MOTOR;
+enum test_type test_sel = INC_GET_POS;
 
 //-- CONTROL
-#define INCREMENT 44
+#define INCREMENT 220
 
 void test_mainMotorIncrement(void);
 void test_mainMotorPosition(void);
 void test_getCurrentPosition(void);
+void text_incrementGetPos(void);
 
 /**
  * main.c
@@ -47,6 +49,11 @@ int main(void)
 	case GET_POS:
 	    test_getCurrentPosition();
 	    break;
+
+	case INC_GET_POS:
+	    text_incrementGetPos();
+	    break;
+
 	}
 
 	while(1);
@@ -83,7 +90,7 @@ void test_mainMotorIncrement(void) {
 void test_mainMotorPosition(void) {
     V_PRINTF("TEST main motor position \r\n");
 
-    int err = setMainMotorPosition(160);
+    int err = setMainMotorPosition(100);
 
     V_PRINTF("ERROR: %d", err);
 }
@@ -96,6 +103,16 @@ void test_getCurrentPosition(void) {
         __delay_cycles(1000000);
     }
 
+}
+
+void text_incrementGetPos(void) {
+    V_PRINTF("Curr Pos: %d\r\n", getCurrentPosition());
+
+    incrementMainMotor(CLOCKWISE, INCREMENT);
+
+    while (isMotorOn());
+
+    V_PRINTF("Curr Pos: %d\r\n", getCurrentPosition());
 }
 
 

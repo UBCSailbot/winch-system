@@ -7,9 +7,16 @@
 #include <msp430.h>
 #include "motor.h"
 #include "spi.h"
+#include "debug.h"
 
 int motor_increment;
+unsigned int motor_step_count;
 volatile int motor_state;
+volatile int prev_position;
+volatile int curr_position;
+int direction;
+volatile unsigned int fault;
+int difference = 0;
 
 
 /**
@@ -20,7 +27,10 @@ volatile int motor_state;
 void init_Main_Motor(void) {
 
     motor_increment = 0;
+    motor_step_count = 0;
     motor_state = OFF;
+    fault = 0;
+    direction = REST;
 
     //-- Init DIR port to output
     P2DIR |= DIR;
@@ -80,19 +90,22 @@ int incrementMainMotor(int direction, int increment) {
  * Returns -1 when error and 0 otherwise
  */
 int setMainMotorPosition(int position) {
-    int direction;
     unsigned int voltage;
     int err;
     int setpoint;
     int tries = 0;
 
     setpoint = CALC_VOLT(position);
+    prev_position = getCurrentPosition();
 
     if (position > 360 || position < 0) return -1;
 
     //-- Receive Pot voltage and determine the direction
-    err = receive_potentiometer(&voltage);
-    if (err < 0) return -2;
+    do {
+        err = receive_potentiometer(&voltage);
+
+    } while (err < 0);
+
 
     if (voltage == setpoint) {
         //-- Position Reached
@@ -104,10 +117,12 @@ int setMainMotorPosition(int position) {
     //-- Set DIR pin
     switch(direction) {
     case CLOCKWISE:
+        V_PRINTF("CLK");
         P2OUT |= DIR;
         break;
 
     case ANTICLOCKWISE:
+        V_PRINTF("ACLK");
         P2OUT &= ~DIR;
         break;
 
@@ -123,13 +138,25 @@ int setMainMotorPosition(int position) {
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
     motor_state = ON;
 
+    TB1CCTL1 |= CCIE;   // Enable interrupts on reg 1
+
     /*
      * Receive potentiometer voltage. Stop motor when setpoint reached
      * Get data at 1kHz frequency
      */
     do {
-        err = receive_potentiometer(&voltage);
-        if (err < 0) return -2;
+
+        if (checkMotorFault()) {
+            V_PRINTF("MMOTOR FAULT : %d \r\n", difference);
+            stopMainMotor();
+            return -1;
+        }
+        do {
+            err = receive_potentiometer(&voltage);
+
+        } while (err < 0);
+
+        curr_position = CALC_POS(voltage);
 
         if (direction == CLOCKWISE && voltage < setpoint || direction == ANTICLOCKWISE && voltage > setpoint) {
             //-- Toggle the DIR pin
@@ -143,10 +170,12 @@ int setMainMotorPosition(int position) {
 
         if (voltage == setpoint) stopMainMotor();
 
+        V_PRINTF("pos: %d \r\n", curr_position);
         __delay_cycles(1000); // 1kHz freq
     }while (voltage != setpoint);
 
     stopMainMotor();
+
 
     return 0;
 }
@@ -159,6 +188,8 @@ void stopMainMotor(void) {
     TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode
     TB1CCTL1 &= ~OUT;        // Force output to zero
     motor_state = OFF;
+
+    TB1CCTL1 &= ~CCIE;
 }
 
 int isMotorOn(void) {
@@ -175,6 +206,13 @@ unsigned int getCurrentPosition(void) {
     return (unsigned int) CALC_POS(voltage);
 }
 
+unsigned int checkMotorFault(void) {
+    unsigned int fault_tmp = fault;
+    fault = 0;
+
+    return fault_tmp;
+}
+
 
 #pragma vector = TIMER1_B0_VECTOR;
 __interrupt void TIMER1_B0_ISR (void) {
@@ -189,7 +227,52 @@ __interrupt void TIMER1_B0_ISR (void) {
     }
 
     TB1CCTL0 &= ~CCIFG;     // Clear interrupt flag
-    TB1CTL &= ~(TBIFG);
+    //TB1CTL &= ~(TBIFG);
+}
+
+#pragma vector = TIMER1_B1_VECTOR;
+__interrupt void TIMER1_B1_ISR (void) {
+    int diff;
+
+    switch(__even_in_range(TB1IV, 12)) {
+    case 0x00:
+        break;
+
+    case 0x02:  // TB1CCR1
+        if (++motor_step_count == STEP_COUNT_FOR_MOTOR_CHECK)
+        {
+            motor_step_count = 0;
+
+            switch (direction) {
+            case CLOCKWISE:
+                diff = prev_position - curr_position;
+                break;
+
+            case ANTICLOCKWISE:
+                diff = curr_position - prev_position;
+                break;
+
+            case REST:
+            default:
+                //-- VALIDATE THIS
+                diff = 0;
+                break;
+            }
+
+            if ( diff > 6 + 1 || diff < 6 - 1 ){
+                difference = diff;
+                fault = 1;
+            }
+
+            prev_position = curr_position;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    TB1CCTL1 &= ~CCIFG;     // Clear interrupt flag
 }
 
 
