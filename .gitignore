@@ -57,6 +57,10 @@ dkms.conf
 dvt/
 .tempFiles/
 RemoteSystemsTempFiles/
-*/Debug/*
-*prefs
+
+Debug/
+Release/
+targetConfigs/
+.launches/
+*.xdchelp
 

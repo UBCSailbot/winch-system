@@ -79,7 +79,7 @@ typedef struct motor_tracker_struct {
     volatile unsigned char fault;
 } motor_tracker_t;
 
-motor_stat_t motor_stat;
+static motor_stat_t motor_stat;
 static motor_tracker_t motor_tracker;
 
 
