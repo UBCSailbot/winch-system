@@ -10,6 +10,19 @@
 //-- State of gearmotor
 volatile int GearMotorOn = 0;
 
+
+/**
+ *  Name:       init_gearmotor
+ *
+ *
+ *  Purpose:    initialize the NFAULT, MODE, PHASE, NSLEEP and ENABLE pins, PWM and timeout timer
+ *
+ *  Params:     none
+ *
+ *  Return:     none
+ *
+ *  Notes:      default PWM freq 700Hz
+ */
 void init_gearmotor(void) {
 
     //-- PJ.3 NFAULT Input
@@ -55,7 +68,6 @@ void init_gearmotor(void) {
 
     //-- Initialize timeout timer --
 
-
     //-- Timer_A Main timer 1s
     TA1CCR0 = D_TIMEOUTC;
     //-- ACLK (10 khz)
@@ -64,17 +76,28 @@ void init_gearmotor(void) {
 
 }
 
-/*
- * @brief Starts motor with given direction, speed, and timeout
- *  int forward --> 0 for reverse (anti-clockwise, towards left pawl)
- *                  1 for forward (clockwise, towards right pawl)
- *  int speed   --> PWM duty cycle, input from 1 to 1427 (D_PWM_UPPERC-1)
- *                  1427 is 1% duty cycle, 1 is 99% duty cycle
- *                  Formula is 1427*(1-duty_decimal)
- *  int timeout --> Timeout for max duration of motor run after startGearMotor
- *                  Resets to new timeout when startGearMotor is run again
- *                  Input in millisecond, example 500 = 500 milliseconds
- *                  Max input is 6553 (6.553s)
+/**
+ *  Name:       startGearMotor
+ *
+ *
+ *  Purpose:    starts motor with given direction, speed, and timeout
+ *
+ *  Params:
+ *              forward - 0 for reverse (anti-clockwise, towards left pawl)
+ *                        1 for forward (clockwise, towards right pawl)
+ *
+ *              speed - PWM duty cycle, input from 1 to 1427 (D_PWM_UPPERC-1)
+ *                      1427 is 1% duty cycle, 1 is 99% duty cycle
+ *                      formula is 1427*(1-duty_decimal)
+ *
+ *              timeout - timeout for max duration of motor run after startGearMotor
+ *                        resets to new timeout when startGearMotor is run again
+ *                        input in millisecond, example 500 = 500 milliseconds
+ *                        max input is 6553 (6.553s)
+ *
+ *  Return:     none
+ *
+ *  Notes:      none
  */
 void startGearMotor(int forward, int speed, int timeout) {
 
@@ -101,6 +124,18 @@ void startGearMotor(int forward, int speed, int timeout) {
     GearMotorOn = 1;
 }
 
+/**
+ *  Name:       stopGearMotor
+ *
+ *
+ *  Purpose:    stops the gear motor from moving
+ *
+ *  Params:     none
+ *
+ *  Return:     none
+ *
+ *  Notes:     none
+ */
 void stopGearMotor(void) {
 
     //-- MC - idle, Disable PWM
@@ -120,6 +155,18 @@ void stopGearMotor(void) {
     TA1CTL |= TACLR;
 }
 
+/**
+ *  Name:       isGearMotorOn
+ *
+ *
+ *  Purpose:    returns the state of the gear motor
+ *
+ *  Params:     none
+ *
+ *  Return:     none
+ *
+ *  Notes:      none
+ */
 int isGearMotorOn(void) {
     return GearMotorOn;
 }

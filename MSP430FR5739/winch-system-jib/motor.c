@@ -12,10 +12,21 @@ int motor_increment;
 unsigned int motor_tries = 0;
 int difference;
 
+
 /**
- * P2.2 DIR: 1 CLK and 0 ACLK
+ *  Name:       init_Main_Motor
  *
- * P3.4 STEP: Uses TB1 CCR1 capture register
+ *
+ *  Purpose:    initialize the STEP pin to perform PWM using TB1.1 timer register
+ *
+ *  Params:     none
+ *
+ *  Return:     none
+ *
+ *  Notes:      must be called after init_spi()
+ *
+ *              P2.2 DIR: 1 CLK and 0 ACLK
+ *              P3.4 STEP: Uses TB1 CCR1 capture register
  */
 void init_Main_Motor(void) {
 
@@ -36,7 +47,7 @@ void init_Main_Motor(void) {
     P2OUT &= ~DIR;
 
     //-- Initialize PWM on STEP port
-    //-- P3.4 STEP TB1.1
+    //-- P3.4 STEP  function - TB1.1 (Table 6-47 in datasheet)
     P3DIR |= STEP;
     P3SEL1 &= ~STEP;
     P3SEL0 |= STEP;
@@ -52,10 +63,25 @@ void init_Main_Motor(void) {
     P1DIR |= ON_MOTOR;
     P1OUT &= ~ON_MOTOR;
 
-    //-- THIS ONLY WORKS if init_Main_Motor is called after init_spi
     setCurrentPosition();
 }
 
+/**
+ *  Name:       incrementMainMotor
+ *
+ *
+ *  Purpose:    increments the motor by a certain number of steps
+ *
+ *  Params:     dir - CLOCKWISE
+ *                    ANTICLOCKWISE
+ *
+*               increment - number of steps (PWM pulses)
+ *
+ *  Return:     0 - success
+ *              < 0 - failure
+ *
+ *  Notes:      none
+ */
 int incrementMainMotor(int dir, int increment) {
 
     //-- Motor should have already gone through the TURN_MOTOR_ON state
@@ -88,11 +114,22 @@ int incrementMainMotor(int dir, int increment) {
 
     return 0;
 }
+
 /**
- * Rotates the main motor in the direction indicated by the
- * global state
+ *  Name:       setMainMotorPosition
  *
- * Returns -1 when error and 0 when success and 1 if motor has reached setpoint
+ *
+ *  Purpose:    sets the position of the main motor
+ *
+ *  Params:     phase - INIT_MMOTOR
+ *                    - RUN_MMOTOR
+ *
+ *  Return:     COMPLETE - success
+ *              ERROR - error
+ *              RESTART - go to Start Pawl state
+ *              RUN_AGAIN - run current phase again
+ *
+ *  Notes:      motor_stat struct controls what position the motor is moving to
  */
 t_ret_code setMainMotorPosition(unsigned int phase) {
     int ret;
