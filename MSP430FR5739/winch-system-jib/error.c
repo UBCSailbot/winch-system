@@ -23,7 +23,16 @@
  */
 void set_error(error_code_t error)
 {
+    static unsigned int error_count = 0;
 
+    error_state.error = error_state.error | ((unsigned long)error << error_state.byte_offset * 8);
+
+    error_state.byte_offset++;
+
+    if (++error_count >= MAX_ERROR_COUNT)
+    {
+        error_state.max_error_reached = 1;
+    }
 }
 
 /**
@@ -34,13 +43,16 @@ void set_error(error_code_t error)
  *
  *  Params:     none
  *
- *  Return:     error_code_t - error code enum value
+ *  Return:     unsigned long - error code 32 bit
  *
  *  Notes:      error cleared after returned
  */
-error_code_t get_error(void)
+unsigned long get_error(void)
 {
-
+    unsigned long tmp_err = error_state.error;
+    error_state.error = NO_ERROR;
+    error_state.byte_offset = 0;
+    return tmp_err;
 }
 
 /**
@@ -58,5 +70,8 @@ error_code_t get_error(void)
  */
 unsigned char max_error_reached(void)
 {
-
+    unsigned char tmp_max_error_reached = error_state.max_error_reached;
+    error_state.max_error_reached = 0;
+    error_state.error_count = 0;
+    return tmp_max_error_reached;
 }

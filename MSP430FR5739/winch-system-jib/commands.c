@@ -98,7 +98,7 @@ void end_command(void) {
  *
  *  Notes:      none
  */
-t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg) {
+t_state set_current_command(unsigned int cmd_type, unsigned long tx_msg) {
     t_cmd * current_cmd;
     current_cmd = get_current_command();
 
@@ -280,7 +280,7 @@ static t_state lookup_cmd_start_state(unsigned int cmd_type) {
  *
  *  Notes:      NOP if no current command is not available
  */
-void set_current_tx_msg(unsigned int tx_msg) {
+void set_current_tx_msg(unsigned long tx_msg) {
     t_cmd * current_cmd = get_current_command();
     if (current_cmd != (t_cmd*)0) {
         current_cmd->tx_msg = tx_msg;
@@ -299,7 +299,7 @@ void set_current_tx_msg(unsigned int tx_msg) {
  *
  *  Notes:      none
  */
-unsigned int get_current_tx_msg(void) {
+unsigned long get_current_tx_msg(void) {
     t_cmd * current_cmd = get_current_command();
     unsigned int current_tx_msg;
 

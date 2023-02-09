@@ -11,6 +11,7 @@
 #include "motor.h"
 #include "pawl.h"
 #include "debug.h"
+#include "error.h"
 
 //-- Include uart.h in header file
 
@@ -160,7 +161,7 @@ static void statemachine(void) {
         break;
 
     case ERROR_STATE:
-        set_current_tx_msg(ERROR_MSG);
+        set_current_tx_msg(ERROR_MSG | get_error());
         break;
 
     case ABORT:

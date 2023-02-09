@@ -28,7 +28,7 @@ typedef struct cmd {
     unsigned int    type;
     t_state        state;
     unsigned int  rx_msg;       // FROM UCCM MSG
-    unsigned int  tx_msg;       // TO UCCM MSG
+    unsigned long  tx_msg;       // TO UCCM MSG
 }t_cmd;
 
 static unsigned int active_cmd;
@@ -62,7 +62,7 @@ void clear_all_other_commands(void);
 //-- GETERS and SETTERS --
 
 //-- Sets the command type and/or tx_msg for the current command, and returns the next state
-t_state set_current_command(unsigned int cmd_type, unsigned int tx_msg);
+t_state set_current_command(unsigned int cmd_type, unsigned long tx_msg);
 
 //-- Gets the command currently running
 static t_cmd * get_current_command(void);
@@ -77,10 +77,10 @@ void set_current_command_state(t_state state);
 t_state get_current_command_state(void);
 
 //-- Set the values for the tx_msg variable in the t_cmd structure
-void set_current_tx_msg(unsigned int tx_msg);
+void set_current_tx_msg(unsigned long tx_msg);
 
 //-- Gets the value for the tx_msg variable in the t_cmd structure
-unsigned int get_current_tx_msg(void);
+unsigned long get_current_tx_msg(void);
 
 //-- Sets the value of rx_msg in the t_cmd structure
 void set_current_rx_msg(unsigned int rx_msg);
