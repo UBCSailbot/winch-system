@@ -30,14 +30,24 @@ typedef enum States {
     MAX_STATE
 } t_state;
 
-//-- UCCM MSGS
-#define SETPOS_MSG          0x01
-#define QUERYPOS_MSG        0x02
-#define STOPLOCK_MSG        0x03
-#define ALIVE_MSG           0x04
-#define BUSY_MSG            0x08
+//-- HEADER MSGS 4 bits
+#define SETPOS_MSG          0x1
+#define QUERYPOS_MSG        0x2
+#define STOPLOCK_MSG        0x3
+#define ALIVE_MSG           0x4
+#define BUSY_MSG            0x5
+#define UNDEF_MSG           0x6
+#define ERROR_MSG           0xF
 
-#define ERROR_MSG           0xFF000000
+// TX MSG Structure
+/* ************************************************
+ * * 4 bits Header *         12 bits Data         *
+ * ************************************************
+ */
+#define HEADER_OFFSET       12
+#define HEADER_MASK         0xF000
+#define DATA_OFFSET         0
+#define DATA_MASK           0x0FFF
 
 
 //-- Receive commands from the uccm. top level state machine

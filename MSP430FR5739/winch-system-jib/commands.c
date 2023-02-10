@@ -90,15 +90,14 @@ void end_command(void) {
  *              - IDLE_CMD
  *
  *  Params:     cmd_type - the type of command to set
- *              tx_msg   - the message which would be sent to the UCCM
- *                         once command is successful
+ *              header   - the header in the last 4 bits to identify cmd
  *
  *  Return:     the next state the command would be set to
  *              IDLE if current command does not exist
  *
  *  Notes:      none
  */
-t_state set_current_command(unsigned int cmd_type, unsigned long tx_msg) {
+t_state set_current_command(unsigned int cmd_type, unsigned long header) {
     t_cmd * current_cmd;
     current_cmd = get_current_command();
 
@@ -112,11 +111,11 @@ t_state set_current_command(unsigned int cmd_type, unsigned long tx_msg) {
         V_PRINTF(" BUSY ->")
         current_cmd->type = ACTION_BUSY;
         current_cmd->state = SEND_TO_UCCM;
-        current_cmd->tx_msg = BUSY_MSG << 9;
+        current_cmd->tx_msg = BUSY_MSG << HEADER_OFFSET;
     } else {
         current_cmd->type = cmd_type;
         current_cmd->state = lookup_cmd_start_state(cmd_type);
-        current_cmd->tx_msg = tx_msg;
+        current_cmd->tx_msg = header << HEADER_OFFSET;
         active_cmd |= cmd_type;
     }
 
@@ -269,12 +268,56 @@ static t_state lookup_cmd_start_state(unsigned int cmd_type) {
 }
 
 /**
+ *  Name:       set_current_tx_msg_data
+ *
+ *
+ *  Purpose:    sets the data for message to be transmitted to the UCCM
+ *
+ *  Params:     tx_msg_data - message to be sent to UCCM
+ *
+ *  Return:     none
+ *
+ *  Notes:      NOP if no current command is not available
+ */
+void set_current_tx_msg_data(unsigned long tx_msg_data) {
+    t_cmd * current_cmd = get_current_command();
+    if (current_cmd != (t_cmd*)0) {
+        current_cmd->tx_msg = current_cmd->tx_msg | (tx_msg_data & DATA_MASK);
+    }
+}
+
+/**
+ *  Name:       get_current_tx_msg_dat
+ *
+ *
+ *  Purpose:    gets the message data to be transmitted to the UCCM
+ *
+ *  Params:     none
+ *
+ *  Return:     0 when no active command
+ *
+ *  Notes:      none
+ */
+unsigned long get_current_tx_msg_data(void) {
+    t_cmd * current_cmd = get_current_command();
+    unsigned int current_tx_msg_data;
+
+    if (current_cmd == (t_cmd *)0) {
+        current_tx_msg_data = 0;
+    } else {
+        current_tx_msg_data = current_cmd->tx_msg & DATA_MASK;
+    }
+
+    return current_tx_msg_data;
+}
+
+/**
  *  Name:       set_current_tx_msg
  *
  *
- *  Purpose:    sets the message to be transmitted to the UCCM
+ *  Purpose:    sets the for message to be transmitted to the UCCM
  *
- *  Params:     tx_msg - message to be sent to UCCM
+ *  Params:     tx_msg_data - message to be sent to UCCM
  *
  *  Return:     none
  *
@@ -361,6 +404,53 @@ unsigned int get_current_rx_msg(void) {
     }
 
     return current_rx_msg;
+}
+
+/**
+ *  Name:       get_current_header
+ *
+ *
+ *  Purpose:    gets the header of the current command
+ *
+ *  Params:     none
+ *
+ *  Return:     header of curr cmd
+ *              if not active then return 0
+ *
+ *  Notes:      none
+ */
+unsigned long  get_current_header(void) {
+    t_cmd * current_cmd;
+
+    current_cmd = get_current_command();
+
+    if (current_cmd != (t_cmd *)0) {
+        return 0;
+    } else {
+        return current_cmd->tx_msg >> HEADER_OFFSET;
+    }
+}
+
+/**
+ *  Name:       set_current_header
+ *
+ *
+ *  Purpose:    sets the header of the current command
+ *
+ *  Params:     new_header - the new header to be set
+ *
+ *  Return:     none
+ *
+ *  Notes:      none
+ */
+void  set_current_header(unsigned long new_header) {
+    t_cmd * current_cmd;
+
+    current_cmd = get_current_command();
+
+    if (current_cmd == (t_cmd *)0) {
+        current_cmd->tx_msg = (current_cmd->tx_msg & ~HEADER_MASK) | (new_header << HEADER_OFFSET);
+    }
 }
 
 /**
