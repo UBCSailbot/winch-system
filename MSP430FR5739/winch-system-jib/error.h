@@ -26,10 +26,10 @@ typedef enum error_code {
     MOTOR_NOT_ON,       // 1
     INVALID_DIR,
     INVALID_SETPOINT,
-    MOTOR_FAULT,
+    MMOTOR_FAULT,
     SET_DIR_TO_MOVE_ERROR,  // 5
     RECEIVE_POT_ERROR,
-    POSITION_EXCEED_360,
+    CURR_POSITION_EXCEED_360,
     SET_CURRENT_POS_ERROR,
 
     /* gearmotor.c */
@@ -48,6 +48,9 @@ typedef enum error_code {
     CONF_HALL_AIN2_ERROR,
     INVALID_POT,
     MAX_CONF_HALL_ATTEMPTS,
+
+    /* statemachine.c [20] */
+    INVALID_RX_SETPOINT,       // 20
 
     MAX_ERROR_VAL
 }error_code_t;

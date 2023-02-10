@@ -7,6 +7,7 @@
 #include <msp430.h>
 #include "motor.h"
 #include "debug.h"
+#include "error.h"
 
 int motor_increment;
 unsigned int motor_tries = 0;
@@ -85,7 +86,10 @@ void init_Main_Motor(void) {
 int incrementMainMotor(int dir, int increment) {
 
     //-- Motor should have already gone through the TURN_MOTOR_ON state
-    if (!isMotorOn()) return -1;
+    if (!isMotorOn()) {
+        set_error(MOTOR_NOT_ON);
+        return -1;
+    }
 
     //-- Set DIR pin
     switch(dir) {
@@ -98,6 +102,7 @@ int incrementMainMotor(int dir, int increment) {
         break;
 
     default:
+        set_error(INVALID_DIR);
         return -2;  // Action not completed
     }
 
@@ -136,7 +141,10 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
 
     if (phase == INIT_MMOTOR) {
 
-        if (motor_stat.setpoint > 360) return ERROR;
+        if (motor_stat.setpoint > 360){
+            set_error(INVALID_SETPOINT)
+            return ERROR;
+        }
 
         //-- Motor should have already gone through the TURN_MOTOR_ON state
         if (!isMotorOn()) return ERROR;
@@ -156,6 +164,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
             return COMPLETE;
 
         default:
+            set_error(INVALID_DIR);
             return ERROR;  // Action not completed
         }
 
@@ -172,11 +181,15 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
 
         if (checkMotorFaultAndClear()) {
             V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
+            set_error(MMOTOR_FAULT);
             return ERROR;
         }
 
         ret = setDirectionToMove(motor_stat.setpoint);
-        if (ret < 0) return ERROR;
+        if (ret < 0) {
+            set_error(SET_DIR_TO_MOVE_ERROR);
+            return ERROR;
+        }
 
         if (motor_stat.direction == REST) {
 
@@ -266,11 +279,17 @@ int setCurrentPosition(void) {
     int err;
 
     err = receive_potentiometer(&voltage);
-    if (err) return err;
+    if (err) {
+        set_error(RECEIVE_POT_ERROR);
+        return err;
+    }
 
     position = (unsigned int) CALC_POS(voltage);
 
-    if (position > 360) return -1;
+    if (position > 360) {
+        set_error(CURR_POSITION_EXCEED_360);
+        return -1;
+    }
 
     motor_stat.position = position;
 
@@ -301,7 +320,10 @@ int setDirectionToMove(unsigned int setpoint) {
     motor_stat.setpoint = setpoint;
 
     err = setCurrentPosition();
-    if (err) return err;
+    if (err) {
+        set_error(SET_CURRENT_POS_ERROR);
+        return err;
+    }
 
     if (motor_stat.position == setpoint) {
         //-- Position Reached
