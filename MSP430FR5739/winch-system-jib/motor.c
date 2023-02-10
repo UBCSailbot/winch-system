@@ -142,7 +142,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
     if (phase == INIT_MMOTOR) {
 
         if (motor_stat.setpoint > 360){
-            set_error(INVALID_SETPOINT)
+            set_error(INVALID_SETPOINT);
             return ERROR;
         }
 

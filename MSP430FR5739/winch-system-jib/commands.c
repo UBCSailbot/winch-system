@@ -111,11 +111,11 @@ t_state set_current_command(unsigned int cmd_type, unsigned long header) {
         V_PRINTF(" BUSY ->")
         current_cmd->type = ACTION_BUSY;
         current_cmd->state = SEND_TO_UCCM;
-        current_cmd->tx_msg = BUSY_MSG << HEADER_OFFSET;
+        current_cmd->tx_msg = (BUSY_MSG << HEADER_OFFSET) & HEADER_MASK;
     } else {
         current_cmd->type = cmd_type;
         current_cmd->state = lookup_cmd_start_state(cmd_type);
-        current_cmd->tx_msg = header << HEADER_OFFSET;
+        current_cmd->tx_msg = (header << HEADER_OFFSET) & HEADER_MASK;
         active_cmd |= cmd_type;
     }
 
@@ -450,6 +450,52 @@ void  set_current_header(unsigned long new_header) {
 
     if (current_cmd == (t_cmd *)0) {
         current_cmd->tx_msg = (current_cmd->tx_msg & ~HEADER_MASK) | (new_header << HEADER_OFFSET);
+    }
+}
+
+/**
+ *  Name:       get_current_header_errorflag
+ *
+ *
+ *  Purpose:    gets the header error flag
+ *
+ *  Params:     none
+ *
+ *  Return:     header err flag
+ *
+ *  Notes:      none
+ */
+unsigned char  get_current_header_errorflag(void) {
+    t_cmd * current_cmd;
+
+    current_cmd = get_current_command();
+
+    if (current_cmd != (t_cmd *)0) {
+        return 0;
+    } else {
+        return (current_cmd->tx_msg & ERROR_MASK ? 1 : 0);
+    }
+}
+
+/**
+ *  Name:       set_current_header_errorflag
+ *
+ *
+ *  Purpose:    sets the error flag from header
+ *
+ *  Params:     none
+ *
+ *  Return:     none
+ *
+ *  Notes:      none
+ */
+void  set_current_header_errorflag(void) {
+    t_cmd * current_cmd;
+
+    current_cmd = get_current_command();
+
+    if (current_cmd == (t_cmd *)0) {
+        current_cmd->tx_msg = (current_cmd->tx_msg | ((unsigned long)0x1 << ERROR_OFFSET));
     }
 }
 

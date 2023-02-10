@@ -98,11 +98,17 @@ void set_current_rx_msg(unsigned int rx_msg);
 //-- Gets the value of rx_msg in the t_cmd structure
 unsigned int get_current_rx_msg(void);
 
+//-- Sets a new header value for the current cmd
+void set_current_header(unsigned long new_header);
+
 //-- Gets the header value of the current cmd
 unsigned long get_current_header(void);
 
-//-- Sets a new header value for the current cmd
-void set_current_header(unsigned long new_header);
+//-- Sets a error flag to header
+void set_current_header_errorflag(void);
+
+//-- Gets error flag from header
+unsigned char get_current_header_errorflag(void);
 
 
 //-- HELPER FUNCTIONS --

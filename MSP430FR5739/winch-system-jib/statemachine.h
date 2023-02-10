@@ -37,17 +37,19 @@ typedef enum States {
 #define ALIVE_MSG           0x4
 #define BUSY_MSG            0x5
 #define UNDEF_MSG           0x6
-#define ERROR_MSG           0xF
 
 // TX MSG Structure
 /* ************************************************
- * * 4 bits Header *         12 bits Data         *
+ * * 1 bit err * 3 bits Header *   12 bits Data   *
  * ************************************************
  */
 #define HEADER_OFFSET       12
-#define HEADER_MASK         0xF000
+#define HEADER_MASK         0x7000
 #define DATA_OFFSET         0
 #define DATA_MASK           0x0FFF
+
+#define ERROR_OFFSET        14
+#define ERROR_MASK          0x8000
 
 
 //-- Receive commands from the uccm. top level state machine

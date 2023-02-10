@@ -25,13 +25,15 @@ void set_error(error_code_t error)
 {
     static unsigned int error_count = 0;
 
-    error_state.error = error_state.error | ((unsigned long)error << error_state.byte_offset * 8);
+    if (error_state.byte_offset < 1) {
 
-    error_state.byte_offset++;
+        error_state.error = error_state.error | ((unsigned long)error << error_state.byte_offset * 8);
+        error_state.byte_offset++;
 
-    if (++error_count >= MAX_ERROR_COUNT)
-    {
-        error_state.max_error_reached = 1;
+        if (++error_count >= MAX_ERROR_COUNT)
+        {
+            error_state.max_error_reached = 1;
+        }
     }
 }
 
