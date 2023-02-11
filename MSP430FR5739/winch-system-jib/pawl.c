@@ -12,6 +12,7 @@
 #include "spi.h"
 #include "motor.h"
 #include "debug.h"
+#include "error.h"
 
 unsigned int motor_inc_tries = 0;
 unsigned int dir = 0;
@@ -42,6 +43,7 @@ t_ret_code move_pawl(unsigned int phase) {
     //-- Fault active low
     if (!(PJIN & NFAULT)) {
         V_PRINTF("NFAULT");
+        set_error(MOTOR_NFAULT);
         return ERROR;
     }
 
@@ -70,7 +72,10 @@ static t_ret_code disengageRight(unsigned int phase) {
         err = receive_hallsensors(NULL, NULL, &pawl_right);
 
         //-- Error checking to see if we could receive pawl_right data
-        if (err < 0) return ERROR;
+        if (err < 0) {
+            set_error(INVALID_RIGHT_PAWL);
+            return ERROR;
+        }
 
         if (pawl_right <= RIGHT_THRES) {
             return COMPLETE;
@@ -88,7 +93,10 @@ static t_ret_code disengageRight(unsigned int phase) {
 
         do{
             err = receive_hallsensors(NULL, NULL, &pawl_right);
-            if (++spi_tries > MAX_TRIES) return ERROR;
+            if (++spi_tries > MAX_TRIES) {
+                set_error(MAX_SPI_TRIES);
+                return ERROR;
+            }
         } while (err);
 
         if (pawl_right <= RIGHT_THRES) {
@@ -99,7 +107,10 @@ static t_ret_code disengageRight(unsigned int phase) {
 
         if (!isGearMotorOn() && !isMotorRunning()) {
             //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) return ERROR;
+            if (++motor_inc_tries > MAX_TRIES) {
+                set_error(MAX_MOTOR_INC);
+                return ERROR;
+            }
 
             incrementMainMotor(CLOCKWISE, 5);
 
@@ -121,7 +132,10 @@ static t_ret_code disengageLeft(unsigned int phase) {
         err = receive_hallsensors(&pawl_left, NULL, NULL);
 
         //-- Error checking to see if we could receive pawl_right data
-        if (err < 0) return ERROR;
+        if (err < 0) {
+            set_error(INVALID_LEFT_PAWL);
+            return ERROR;
+        }
 
         if (pawl_left <= LEFT_THRES) {
             //-- Already disengaged (Why?)
@@ -137,7 +151,10 @@ static t_ret_code disengageLeft(unsigned int phase) {
 
         do{
             err = receive_hallsensors(&pawl_left, NULL, NULL);
-            if (++spi_tries > MAX_TRIES) return ERROR;
+            if (++spi_tries > MAX_TRIES) {
+                set_error(MAX_SPI_TRIES);
+                return ERROR;
+            }
         } while (err);
 
         if (pawl_left <= LEFT_THRES) {
@@ -149,7 +166,10 @@ static t_ret_code disengageLeft(unsigned int phase) {
         if (!isGearMotorOn() && !isMotorRunning()) {
 
             //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) return ERROR;
+            if (++motor_inc_tries > MAX_TRIES) {
+                set_error(MAX_MOTOR_INC);
+                return ERROR;
+            }
 
             incrementMainMotor(ANTICLOCKWISE, 5);
 
@@ -173,7 +193,10 @@ t_ret_code engageBoth(unsigned int phase) {
 
         err = receive_hallsensors(NULL, &cam, NULL);
 
-        if (err < 0) return ERROR;
+        if (err < 0) {
+            set_error(INVALID_CAM);
+            return ERROR;
+        }
 
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
             //-- Already disengaged (Why?)
@@ -201,7 +224,7 @@ t_ret_code engageBoth(unsigned int phase) {
         do{
             err = receive_hallsensors(NULL, &cam, NULL);
             if (++spi_tries > MAX_TRIES) {
-                V_PRINTF("MAX_SPI: %d\r\n");
+                set_error(MAX_SPI_TRIES);
                 return ERROR;
             }
         } while (err == -1);
@@ -232,7 +255,10 @@ t_ret_code engageBoth(unsigned int phase) {
 
 
         if (!isGearMotorOn()) {
-            if (++motor_inc_tries > MAX_TRIES) return ERROR;
+            if (++motor_inc_tries > MAX_TRIES) {
+                set_error(MAX_MOTOR_INC);
+                return ERROR;
+            }
 
             startGearMotor(dir, SLOW, 1000);
 
