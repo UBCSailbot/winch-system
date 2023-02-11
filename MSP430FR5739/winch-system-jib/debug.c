@@ -24,7 +24,7 @@
  *
  *  Notes:      debug using V_PRINTF macro only. Ensure that DBG is set to 1.
  */
-static void dbg_printf(const char *format, ...) {
+void dbg_printf(const char *format, ...) {
     va_list args;
     char str[100] = "";
 

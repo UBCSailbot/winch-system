@@ -48,7 +48,7 @@ typedef enum States {
 #define DATA_OFFSET         0
 #define DATA_MASK           0x0FFF
 
-#define ERROR_OFFSET        14
+#define ERROR_OFFSET        15
 #define ERROR_MASK          0x8000
 
 

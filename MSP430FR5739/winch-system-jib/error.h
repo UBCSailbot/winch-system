@@ -10,15 +10,15 @@
 
 #define MAX_ERROR_COUNT 5
 
-#define BYTES_OFFSET_MASK   0x00000003
-#define MAX_CNTFLG_MASK     0x00000004
-#define ERROR_CNT_MASK      0x000000F8
-#define ERROR_MASK          0xFFFFFF00
-
-#define BYTES_OFFSET_OFFSET 0
-#define MAX_CNTFLG_OFFSET   2
-#define ERROR_CNT_OFFSET    3
-#define ERROR_OFFSET        8
+//#define BYTES_OFFSET_MASK   0x00000003
+//#define MAX_CNTFLG_MASK     0x00000004
+//#define ERROR_CNT_MASK      0x000000F8
+//#define ERROR_MASK          0xFFFFFF00
+//
+//#define BYTES_OFFSET_OFFSET 0
+//#define MAX_CNTFLG_OFFSET   2
+//#define ERROR_CNT_OFFSET    3
+//#define ERROR_OFFSET        8
 
 typedef enum error_code {
     NO_ERROR,
@@ -49,8 +49,9 @@ typedef enum error_code {
     INVALID_POT,
     MAX_CONF_HALL_ATTEMPTS,
 
-    /* statemachine.c [20] */
+    /* statemachine.c [20 - 21] */
     INVALID_RX_SETPOINT,       // 20
+    ERROR_STATE_REACHED,
 
     MAX_ERROR_VAL
 }error_code_t;

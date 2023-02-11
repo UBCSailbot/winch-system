@@ -162,6 +162,7 @@ static void statemachine(void) {
         break;
 
     case ERROR_STATE:
+        set_error(ERROR_STATE_REACHED);
         set_current_header_errorflag();
         set_current_tx_msg_data(get_error());
         break;

@@ -277,12 +277,12 @@ static t_state lookup_cmd_start_state(unsigned int cmd_type) {
  *
  *  Return:     none
  *
- *  Notes:      NOP if no current command is not available
+ *  Notes:      Replaces previous data
  */
 void set_current_tx_msg_data(unsigned long tx_msg_data) {
     t_cmd * current_cmd = get_current_command();
     if (current_cmd != (t_cmd*)0) {
-        current_cmd->tx_msg = current_cmd->tx_msg | (tx_msg_data & DATA_MASK);
+        current_cmd->tx_msg = (current_cmd->tx_msg & ~DATA_MASK) | (tx_msg_data & DATA_MASK);
     }
 }
 
@@ -424,7 +424,7 @@ unsigned long  get_current_header(void) {
 
     current_cmd = get_current_command();
 
-    if (current_cmd != (t_cmd *)0) {
+    if (current_cmd == (t_cmd *)0) {
         return 0;
     } else {
         return current_cmd->tx_msg >> HEADER_OFFSET;
@@ -448,7 +448,7 @@ void  set_current_header(unsigned long new_header) {
 
     current_cmd = get_current_command();
 
-    if (current_cmd == (t_cmd *)0) {
+    if (current_cmd != (t_cmd *)0) {
         current_cmd->tx_msg = (current_cmd->tx_msg & ~HEADER_MASK) | (new_header << HEADER_OFFSET);
     }
 }
@@ -470,7 +470,7 @@ unsigned char  get_current_header_errorflag(void) {
 
     current_cmd = get_current_command();
 
-    if (current_cmd != (t_cmd *)0) {
+    if (current_cmd == (t_cmd *)0) {
         return 0;
     } else {
         return (current_cmd->tx_msg & ERROR_MASK ? 1 : 0);
@@ -494,7 +494,7 @@ void  set_current_header_errorflag(void) {
 
     current_cmd = get_current_command();
 
-    if (current_cmd == (t_cmd *)0) {
+    if (current_cmd != (t_cmd *)0) {
         current_cmd->tx_msg = (current_cmd->tx_msg | ((unsigned long)0x1 << ERROR_OFFSET));
     }
 }

@@ -27,7 +27,7 @@ void set_error(error_code_t error)
 
     if (error_state.byte_offset < 1) {
 
-        error_state.error = error_state.error | ((unsigned long)error << error_state.byte_offset * 8);
+        error_state.error = error_state.error | ((unsigned long)error << (error_state.byte_offset * 8));
         error_state.byte_offset++;
 
         if (++error_count >= MAX_ERROR_COUNT)
