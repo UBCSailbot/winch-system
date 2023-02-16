@@ -88,6 +88,7 @@ void end_command(void) {
  *              - UNDEF
  *              - ACTION_BUSY
  *              - IDLE_CMD
+ *              - RESET
  *
  *  Params:     cmd_type - the type of command to set
  *              header   - the header in the last 4 bits to identify cmd
@@ -252,6 +253,10 @@ static t_state lookup_cmd_start_state(unsigned int cmd_type) {
     case UNDEF:
     case ACTION_BUSY:
         start_state = SEND_TO_UCCM;
+        break;
+
+    case RESET:
+        start_state = RESET_MSP;
         break;
 
     case IDLE_CMD:

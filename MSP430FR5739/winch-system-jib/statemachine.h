@@ -13,6 +13,8 @@
 typedef enum States {
     IDLE,
     DECODE,
+
+    /* SET_POS */
     SET_DIRECTION,
     TURN_MOTOR_ON,
     START_PAWL,
@@ -22,21 +24,31 @@ typedef enum States {
     START_ENGAGE_PAWL,
     WAIT_ENGAGE_PAWL,
     TURN_MOTOR_OFF,
+
+    /* QUERY */
     GET_POSITION,
+
+    /* STOP&LOCK */
     ABORT,
+
+    /* COMMON */
     SEND_TO_UCCM,
     ERROR_STATE,
+
+    /* RESET */
+    RESET_MSP,
 
     MAX_STATE
 } t_state;
 
-//-- HEADER MSGS 4 bits
+//-- HEADER MSGS 3 bits
 #define SETPOS_MSG          0x1
 #define QUERYPOS_MSG        0x2
 #define STOPLOCK_MSG        0x3
 #define ALIVE_MSG           0x4
 #define BUSY_MSG            0x5
 #define UNDEF_MSG           0x6
+#define RESET_MSG           0x7
 
 // TX MSG Structure
 /* ************************************************

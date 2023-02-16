@@ -62,7 +62,10 @@ static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
  {SEND_TO_UCCM,      IDLE,               ERROR_STATE,         ABORT},
 
  //---- ERROR_STATE ----
- {ERROR_STATE,      ABORT,               ABORT,               ABORT}
+ {ERROR_STATE,      ABORT,               ABORT,               ABORT},
+
+ //---- RESET_MSP ----
+ {RESET_MSP,        ABORT,               ERROR_STATE,         ABORT}
 };
 
 
@@ -171,9 +174,10 @@ static void statemachine(void) {
         V_PRINTF("ABORT");
         //-- Primary action to stop winch functionality
         if (abort_action() < 0) {
-            //-- Perform a PUC reset?
+            //-- Perform a PUC reset? TODO: count the number of abort error and reset
             V_PRINTF("ABORT ERR\r\n");
         }
+
         break;
 
     case GET_POSITION:
@@ -181,11 +185,26 @@ static void statemachine(void) {
         set_current_tx_msg_data(pos);
         break;
 
+    case RESET_MSP:
+        //-- Setting to msg data to 0xFFFF indicates a reset
+        set_current_tx_msg_data(0xFFF);
+        break;
+
     case SEND_TO_UCCM:
         tx_msg = get_current_tx_msg();
 
         //-- Send message to the UCCM
         uccm_send("%c%c\r\n", tx_msg >> 8, tx_msg & 0xFF);
+
+        if (get_current_header() == RESET_MSG && get_current_tx_msg_data() == 0xFFF)
+        {
+
+            //-- Wait for uart msg to send 0.1s
+            __delay_cycles(100000);
+
+            //-- Perform PUC Reset
+            WDTCTL = 0xFF;
+        }
 
         //-- Removes current command from the list
         end_command();
@@ -239,6 +258,10 @@ t_state decode_msg(void) {
     case ALIVE_MSG:
 
         next_state = set_current_command(ALIVE, ALIVE_MSG);
+        break;
+
+    case RESET_MSG:
+        next_state = set_current_command(RESET, RESET_MSG);
         break;
 
     default:            // UNDEF

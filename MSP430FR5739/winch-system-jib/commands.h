@@ -22,6 +22,7 @@
 #define UNDEF           16
 #define ACTION_BUSY     32
 #define IDLE_CMD        64
+#define RESET          128
 
 
 typedef struct cmd {

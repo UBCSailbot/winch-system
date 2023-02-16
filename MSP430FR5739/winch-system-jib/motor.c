@@ -147,7 +147,10 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         }
 
         //-- Motor should have already gone through the TURN_MOTOR_ON state
-        if (!isMotorOn()) return ERROR;
+        if (!isMotorOn()) {
+            set_error(MOTOR_NOT_ON);
+            return ERROR;
+        }
 
         //-- Set DIR pin
         switch(motor_stat.direction) {
@@ -178,6 +181,12 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         return COMPLETE;
 
     } else {    // PHASE == RUN_MMOTOR
+
+        //-- Motor should have already gone through the TURN_MOTOR_ON state
+        if (!isMotorOn()) {
+            set_error(MOTOR_NOT_ON);
+            return ERROR;
+        }
 
         if (checkMotorFaultAndClear()) {
             V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
