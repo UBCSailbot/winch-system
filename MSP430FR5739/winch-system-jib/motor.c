@@ -190,6 +190,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
 
         if (checkMotorFaultAndClear()) {
             V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
+            stopMainMotor();
             set_error(MMOTOR_FAULT);
             return ERROR;
         }
