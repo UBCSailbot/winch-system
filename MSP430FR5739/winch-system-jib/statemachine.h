@@ -13,6 +13,8 @@
 typedef enum States {
     IDLE,
     DECODE,
+
+    /* SET_POS */
     SET_DIRECTION,
     TURN_MOTOR_ON,
     START_PAWL,
@@ -22,22 +24,44 @@ typedef enum States {
     START_ENGAGE_PAWL,
     WAIT_ENGAGE_PAWL,
     TURN_MOTOR_OFF,
+
+    /* QUERY */
     GET_POSITION,
+
+    /* STOP&LOCK */
     ABORT,
+
+    /* COMMON */
     SEND_TO_UCCM,
     ERROR_STATE,
+
+    /* RESET */
+    RESET_MSP,
 
     MAX_STATE
 } t_state;
 
-//-- UCCM MSGS
-#define SETPOS_MSG          0x01
-#define QUERYPOS_MSG        0x02
-#define STOPLOCK_MSG        0x03
-#define ALIVE_MSG           0x04
-#define BUSY_MSG            0x08
+//-- HEADER MSGS 3 bits
+#define SETPOS_MSG          0x1
+#define QUERYPOS_MSG        0x2
+#define STOPLOCK_MSG        0x3
+#define ALIVE_MSG           0x4
+#define BUSY_MSG            0x5
+#define UNDEF_MSG           0x6
+#define RESET_MSG           0x7
 
-#define ERROR_MSG           0xFF00
+// TX MSG Structure
+/* ************************************************
+ * * 1 bit err * 3 bits Header *   12 bits Data   *
+ * ************************************************
+ */
+#define HEADER_OFFSET       12
+#define HEADER_MASK         0x7000
+#define DATA_OFFSET         0
+#define DATA_MASK           0x0FFF
+
+#define ERROR_OFFSET        15
+#define ERROR_MASK          0x8000
 
 
 //-- Receive commands from the uccm. top level state machine

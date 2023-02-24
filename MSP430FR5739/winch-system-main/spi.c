@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "spi.h"
 #include "debug.h"
+#include "error.h"
 
 
 /**
@@ -67,6 +68,7 @@ int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_rig
         if (!(active_config & AIN0_CONFID)) {
             if (configHall(AIN0_CONF) < 0) {
                 err = -1;
+                set_error(CONF_HALL_AIN0_ERROR);
                 return err;
             } else active_config = AIN0_CONFID;
         }
@@ -80,6 +82,7 @@ int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_rig
         if (!(active_config & AIN1_CONFID)) {
             if (configHall(AIN1_CONF) < 0) {
                 err = -1;
+                set_error(CONF_HALL_AIN1_ERROR);
                 return err;
             } else active_config = AIN1_CONFID;
         }
@@ -93,6 +96,7 @@ int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_rig
         if (!(active_config & AIN2_CONFID)) {
             if (configHall(AIN2_CONF) < 0) {
                 err = -1;
+                set_error(CONF_HALL_AIN2_ERROR);
                 return err;
             } else active_config = AIN2_CONFID;
         }
@@ -122,6 +126,7 @@ int receive_potentiometer(unsigned int* pot_data) {
 
             if (pot_data_value == 0xFFFF) {
                 V_PRINTF("NO_POT");
+                set_error(INVALID_POT);
                 return -1;
             }
             else if (pot_data_value > POT_MAX_VALUE) {
@@ -168,7 +173,10 @@ int configHall(unsigned int config) {
         //-- bit shift 2 bytes to the right to get configuration value
         //returned_config >>= 16;
 
-        if (++attempts > 4) return -1;
+        if (++attempts > 4) {
+            set_error(MAX_CONF_HALL_ATTEMPTS);
+            return -1;
+        }
 
     } while (returned_config != config);
 

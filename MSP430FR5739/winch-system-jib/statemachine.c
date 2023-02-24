@@ -11,6 +11,7 @@
 #include "motor.h"
 #include "pawl.h"
 #include "debug.h"
+#include "error.h"
 
 //-- Include uart.h in header file
 
@@ -61,7 +62,10 @@ static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
  {SEND_TO_UCCM,      IDLE,               ERROR_STATE,         ABORT},
 
  //---- ERROR_STATE ----
- {ERROR_STATE,      ABORT,               ABORT,               ABORT}
+ {ERROR_STATE,      ABORT,               ABORT,               ABORT},
+
+ //---- RESET_MSP ----
+ {RESET_MSP,        ABORT,               ERROR_STATE,         ABORT}
 };
 
 
@@ -114,6 +118,7 @@ static void statemachine(void) {
         setpos = (rx_msg & 0x1) << 8 | (rx_msg >> 8);
 
         if (setpos > 360) {
+            set_error(INVALID_RX_SETPOINT);
             ret_val = ERROR;
             break;
         }
@@ -123,7 +128,7 @@ static void statemachine(void) {
             break;
         }
 
-        set_current_tx_msg(setpos | (SETPOS_MSG << 9));
+        set_current_tx_msg_data(setpos);
         break;
 
     case TURN_MOTOR_ON:
@@ -160,21 +165,29 @@ static void statemachine(void) {
         break;
 
     case ERROR_STATE:
-        set_current_tx_msg(ERROR_MSG);
+        set_error(ERROR_STATE_REACHED);
+        set_current_header_errorflag();
+        set_current_tx_msg_data(get_error());
         break;
 
     case ABORT:
         V_PRINTF("ABORT");
         //-- Primary action to stop winch functionality
         if (abort_action() < 0) {
-            //-- Perform a PUC reset?
+            //-- Perform a PUC reset? TODO: count the number of abort error and reset
             V_PRINTF("ABORT ERR\r\n");
         }
+
         break;
 
     case GET_POSITION:
         pos = getCurrentCachedPosition();
-        set_current_tx_msg(pos);
+        set_current_tx_msg_data(pos);
+        break;
+
+    case RESET_MSP:
+        //-- Setting to msg data to 0xFFFF indicates a reset
+        set_current_tx_msg_data(0xFFF);
         break;
 
     case SEND_TO_UCCM:
@@ -182,6 +195,16 @@ static void statemachine(void) {
 
         //-- Send message to the UCCM
         uccm_send("%c%c\r\n", tx_msg >> 8, tx_msg & 0xFF);
+
+        if (get_current_header() == RESET_MSG && get_current_tx_msg_data() == 0xFFF)
+        {
+
+            //-- Wait for uart msg to send 0.1s
+            __delay_cycles(100000);
+
+            //-- Perform PUC Reset
+            WDTCTL = 0xFF;
+        }
 
         //-- Removes current command from the list
         end_command();
@@ -211,17 +234,17 @@ t_state decode_msg(void) {
     t_state next_state = IDLE;
     unsigned int rx_msg = get_current_rx_msg();
 
-    // The first bytes xxxx_xxx0 ignoring the least significant bit is the identifier
-    switch((rx_msg & 0xFF) >> 1) {
+    // The first 4 bits xxxx_0000 is the identifier
+    switch((rx_msg & 0xF0) >> 4) {
 
     case SETPOS_MSG:
 
-        next_state = set_current_command(SET_POS, 0x00);
+        next_state = set_current_command(SET_POS, SETPOS_MSG);
         break;
 
     case QUERYPOS_MSG:
 
-        next_state = set_current_command(QUERY_POS, 0x00);
+        next_state = set_current_command(QUERY_POS, QUERYPOS_MSG);
         break;
 
     case STOPLOCK_MSG:
@@ -229,17 +252,21 @@ t_state decode_msg(void) {
         //-- We need to clear all other current commands that are running so we do not return to them after
         clear_all_other_commands();
 
-        next_state = set_current_command(STOPLOCK, STOPLOCK_MSG << 9);
+        next_state = set_current_command(STOPLOCK, STOPLOCK_MSG);
         break;
 
     case ALIVE_MSG:
 
-        next_state = set_current_command(ALIVE, 0x5555);
+        next_state = set_current_command(ALIVE, ALIVE_MSG);
+        break;
+
+    case RESET_MSG:
+        next_state = set_current_command(RESET, RESET_MSG);
         break;
 
     default:            // UNDEF
 
-        next_state = set_current_command(UNDEF, 0xFF00);
+        next_state = set_current_command(UNDEF, UNDEF_MSG);
         break;
     }
 

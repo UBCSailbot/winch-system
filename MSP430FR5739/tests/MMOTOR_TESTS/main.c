@@ -14,7 +14,7 @@ enum test_type
 };
 
 //-- SELECT TEST TO BE PERFORMED HERE
-enum test_type test_sel = INC_GET_POS;
+enum test_type test_sel = MOVE_MOTOR;
 
 //-- CONTROL
 #define INCREMENT 220

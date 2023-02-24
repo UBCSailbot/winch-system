@@ -7,15 +7,27 @@
 #include <msp430.h>
 #include "motor.h"
 #include "debug.h"
+#include "error.h"
 
 int motor_increment;
 unsigned int motor_tries = 0;
 int difference;
 
+
 /**
- * P2.2 DIR: 1 CLK and 0 ACLK
+ *  Name:       init_Main_Motor
  *
- * P3.4 STEP: Uses TB1 CCR1 capture register
+ *
+ *  Purpose:    initialize the STEP pin to perform PWM using TB1.1 timer register
+ *
+ *  Params:     none
+ *
+ *  Return:     none
+ *
+ *  Notes:      must be called after init_spi()
+ *
+ *              P2.2 DIR: 1 CLK and 0 ACLK
+ *              P3.4 STEP: Uses TB1 CCR1 capture register
  */
 void init_Main_Motor(void) {
 
@@ -36,7 +48,7 @@ void init_Main_Motor(void) {
     P2OUT &= ~DIR;
 
     //-- Initialize PWM on STEP port
-    //-- P3.4 STEP TB1.1
+    //-- P3.4 STEP  function - TB1.1 (Table 6-47 in datasheet)
     P3DIR |= STEP;
     P3SEL1 &= ~STEP;
     P3SEL0 |= STEP;
@@ -52,14 +64,32 @@ void init_Main_Motor(void) {
     P1DIR |= ON_MOTOR;
     P1OUT &= ~ON_MOTOR;
 
-    //-- THIS ONLY WORKS if init_Main_Motor is called after init_spi
     setCurrentPosition();
 }
 
+/**
+ *  Name:       incrementMainMotor
+ *
+ *
+ *  Purpose:    increments the motor by a certain number of steps
+ *
+ *  Params:     dir - CLOCKWISE
+ *                    ANTICLOCKWISE
+ *
+*               increment - number of steps (PWM pulses)
+ *
+ *  Return:     0 - success
+ *              < 0 - failure
+ *
+ *  Notes:      none
+ */
 int incrementMainMotor(int dir, int increment) {
 
     //-- Motor should have already gone through the TURN_MOTOR_ON state
-    if (!isMotorOn()) return -1;
+    if (!isMotorOn()) {
+        set_error(MOTOR_NOT_ON);
+        return -1;
+    }
 
     //-- Set DIR pin
     switch(dir) {
@@ -72,6 +102,7 @@ int incrementMainMotor(int dir, int increment) {
         break;
 
     default:
+        set_error(INVALID_DIR);
         return -2;  // Action not completed
     }
 
@@ -88,21 +119,38 @@ int incrementMainMotor(int dir, int increment) {
 
     return 0;
 }
+
 /**
- * Rotates the main motor in the direction indicated by the
- * global state
+ *  Name:       setMainMotorPosition
  *
- * Returns -1 when error and 0 when success and 1 if motor has reached setpoint
+ *
+ *  Purpose:    sets the position of the main motor
+ *
+ *  Params:     phase - INIT_MMOTOR
+ *                    - RUN_MMOTOR
+ *
+ *  Return:     COMPLETE - success
+ *              ERROR - error
+ *              RESTART - go to Start Pawl state
+ *              RUN_AGAIN - run current phase again
+ *
+ *  Notes:      motor_stat struct controls what position the motor is moving to
  */
 t_ret_code setMainMotorPosition(unsigned int phase) {
     int ret;
 
     if (phase == INIT_MMOTOR) {
 
-        if (motor_stat.setpoint > 360) return ERROR;
+        if (motor_stat.setpoint > 360){
+            set_error(INVALID_SETPOINT);
+            return ERROR;
+        }
 
         //-- Motor should have already gone through the TURN_MOTOR_ON state
-        if (!isMotorOn()) return ERROR;
+        if (!isMotorOn()) {
+            set_error(MOTOR_NOT_ON);
+            return ERROR;
+        }
 
         //-- Set DIR pin
         switch(motor_stat.direction) {
@@ -119,6 +167,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
             return COMPLETE;
 
         default:
+            set_error(INVALID_DIR);
             return ERROR;  // Action not completed
         }
 
@@ -133,13 +182,24 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
 
     } else {    // PHASE == RUN_MMOTOR
 
+        //-- Motor should have already gone through the TURN_MOTOR_ON state
+        if (!isMotorOn()) {
+            set_error(MOTOR_NOT_ON);
+            return ERROR;
+        }
+
         if (checkMotorFaultAndClear()) {
             V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
+            stopMainMotor();
+            set_error(MMOTOR_FAULT);
             return ERROR;
         }
 
         ret = setDirectionToMove(motor_stat.setpoint);
-        if (ret < 0) return ERROR;
+        if (ret < 0) {
+            set_error(SET_DIR_TO_MOVE_ERROR);
+            return ERROR;
+        }
 
         if (motor_stat.direction == REST) {
 
@@ -229,11 +289,17 @@ int setCurrentPosition(void) {
     int err;
 
     err = receive_potentiometer(&voltage);
-    if (err) return err;
+    if (err) {
+        set_error(RECEIVE_POT_ERROR);
+        return err;
+    }
 
     position = (unsigned int) CALC_POS(voltage);
 
-    if (position > 360) return -1;
+    if (position > 360) {
+        set_error(CURR_POSITION_EXCEED_360);
+        return -1;
+    }
 
     motor_stat.position = position;
 
@@ -264,7 +330,10 @@ int setDirectionToMove(unsigned int setpoint) {
     motor_stat.setpoint = setpoint;
 
     err = setCurrentPosition();
-    if (err) return err;
+    if (err) {
+        set_error(SET_CURRENT_POS_ERROR);
+        return err;
+    }
 
     if (motor_stat.position == setpoint) {
         //-- Position Reached
