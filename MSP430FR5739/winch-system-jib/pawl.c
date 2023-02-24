@@ -36,15 +36,26 @@ char move_cam = 0;
  */
 t_ret_code move_pawl(unsigned int phase) {
     unsigned int direction;
+    unsigned int wait_motor = 0;
+
     t_ret_code ret = COMPLETE;
 
     direction = getCurrentCachedDirectionToMove();
 
     //-- Fault active low
-    if (!(PJIN & NFAULT)) {
-        V_PRINTF("NFAULT");
-        set_error(MOTOR_NFAULT);
-        return ERROR;
+    while (1) {
+        if ((PJIN & NFAULT) || (PJOUT & NSLEEP)) {
+            break;
+        } else {
+            // 10 ms
+            __delay_cycles(10000);
+        }
+
+        if (wait_motor++ > 5) {
+            V_PRINTF("NFAULT");
+            set_error(MOTOR_NFAULT);
+            return ERROR;
+        }
     }
 
     switch(direction) {
