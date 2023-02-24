@@ -19,9 +19,9 @@
 #define CS_POT BIT6
 #define CS_HALL BIT5
 
-#define MAX_POT_TRIES       3
-#define POT_MAX_VALUE       2980
-#define POT_MIN_VALUE       820
+#define MAX_POT_TRIES       6
+#define POT_MAX_VALUE    3650
+#define POT_MIN_VALUE    410
 
 //-- Tracks current configs
 static unsigned int active_config;
