@@ -14,10 +14,11 @@ enum test_type
 };
 
 //-- SELECT TEST TO BE PERFORMED HERE
-enum test_type test_sel = MOVE_MOTOR;
+enum test_type test_sel = MOTOR_POS;
 
 //-- CONTROL
 #define INCREMENT 220
+#define POSITION 50
 
 void test_mainMotorIncrement(void);
 void test_mainMotorPosition(void);
@@ -90,7 +91,7 @@ void test_mainMotorIncrement(void) {
 void test_mainMotorPosition(void) {
     V_PRINTF("TEST main motor position \r\n");
 
-    int err = setMainMotorPosition(100);
+    int err = setMainMotorPosition(POSITION);
 
     V_PRINTF("ERROR: %d", err);
 }

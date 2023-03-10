@@ -34,9 +34,16 @@
 #define UPPER_COUNT_MID 5682
 #define MID_COUNT_MID 2841
 
-////-- 44 Hz PWM
+////-- Counts - 44 Hz PWM
 #define UPPER_COUNT_SLOW 22727
 #define MID_COUNT_SLOW 11364
+
+//-- Counts - 22 Hz PWM
+#define UPPER_COUNT_SUPER_SLOW 45454
+#define MID_COUNT_SUPER_SLOW 22727
+
+#define UPPER_COUNT_MIN UPPER_COUNT_MID
+#define UPPER_COUNT_MAX UPPER_COUNT_SUPER_SLOW
 
 //-- Each rotation of the motor is +410 mV
 //-- Range 820 to 3278 therefore POT_SCALAR = (POT_MAX_VALUE - POT_MIN_VALUE)/360
@@ -61,7 +68,8 @@
 typedef enum motor_speed {
     MMOTOR_FAST,
     MMOTOR_MID,
-    MMOTOR_SLOW
+    MMOTOR_SLOW,
+    MMOTOR_SUPER_SLOW
 } motor_speed_t;
 
 //-- State of the main motor
@@ -70,6 +78,9 @@ typedef struct motor_status_struct {
     unsigned int position;
     unsigned int direction;
     unsigned int setpoint;
+    volatile unsigned char motor_inc_stat;
+    volatile unsigned char accel;
+    volatile unsigned char running;
 } motor_stat_t;
 
 //-- Tracks the main motor rotations for fault detection

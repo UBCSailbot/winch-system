@@ -19,6 +19,9 @@ volatile unsigned int fault;
 int difference = 0;
 
 
+// motor control variables for ramping
+char accel = 0;
+char motor_inc_status = 0;
 /**
  * P2.2 DIR: 1 forward and 0 backward TODO: confirm
  *
@@ -79,6 +82,8 @@ int incrementMainMotor(int direction, int increment) {
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
     motor_state = ON;
 
+    motor_inc_status = 1;
+
     TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
 
     return 0;
@@ -133,12 +138,21 @@ int setMainMotorPosition(int position) {
     //-- Enable motor through motor controller
     P1OUT |= ON_MOTOR;
 
+    //******* Set speed **** [ML]
+    TB1CCR0 = UPPER_COUNT_SUPER_SLOW - 1;
+    TB1CCR1 = UPPER_COUNT_SUPER_SLOW;
+    motor_step_count = 0;
+
+
     TB1CTL |= TBCLR;                // Clear timer count
     TB1CTL |= MC_1;                 // Count up mode
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
     motor_state = ON;
 
+    accel = 1;
+
     TB1CCTL1 |= CCIE;   // Enable interrupts on reg 1
+    TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
 
     /*
      * Receive potentiometer voltage. Stop motor when setpoint reached
@@ -168,7 +182,13 @@ int setMainMotorPosition(int position) {
             if (++tries > MAX_MOTOR_TRIES) return -5;
         }
 
-        if (voltage == setpoint) stopMainMotor();
+        if (voltage == setpoint){
+            accel = 0;
+
+            while (isMotorOn()) __delay_cycles(10000);
+
+
+        }
 
         V_PRINTF("pos: %d \r\n", curr_position);
         __delay_cycles(1000); // 1kHz freq
@@ -190,6 +210,7 @@ void stopMainMotor(void) {
     motor_state = OFF;
 
     TB1CCTL1 &= ~CCIE;
+    TB1CCTL0 &= ~CCIE;  // Disable interrupts reg 0
 }
 
 int isMotorOn(void) {
@@ -216,15 +237,72 @@ unsigned int checkMotorFault(void) {
 
 #pragma vector = TIMER1_B0_VECTOR;
 __interrupt void TIMER1_B0_ISR (void) {
+    int diff;
 
-    //-- Decrement no. of steps, if zero stop motor
-    if (motor_increment <= 0) {
-        TB1CCTL0 &= ~CCIE;  // Disable interrupts
-        stopMainMotor();
-        motor_increment = 0;
-    } else {
-        motor_increment--;
+    if (motor_inc_status)
+    {
+        //-- Decrement no. of steps, if zero stop motor
+        if (motor_increment <= 0) {
+            stopMainMotor();
+            motor_increment = 0;
+            motor_inc_status = 0;
+        } else {
+            motor_increment--;
+        }
     }
+    else // Ramping
+    {
+
+        switch (direction) {
+        case CLOCKWISE:
+            diff = prev_position - curr_position;
+            break;
+
+        case ANTICLOCKWISE:
+            diff = curr_position - prev_position;
+            break;
+
+        case REST:
+        default:
+            //-- VALIDATE THIS
+            diff = 0;
+            break;
+        }
+
+        // Speed up or speed down
+        if (accel)
+        {
+            if (TB1CCR0 > UPPER_COUNT_MID)
+            {
+                //if (diff == 0) TB1CCR0 = UPPER_COUNT_SLOW;
+                 TB1CCR0 = TB1CCR0 - (TB1CCR0 >> 4);
+            }
+            else
+            {
+                TB1CCR0 = UPPER_COUNT_MID;
+            }
+        }
+        else
+        {
+            if (TB1CCR0 < UPPER_COUNT_SUPER_SLOW)
+            {
+                //if (diff == 0) TB1CCR0 = UPPER_COUNT_SLOW;
+                 TB1CCR0 = TB1CCR0 + (TB1CCR0 >> 2);
+            }
+            else
+            {
+                TB1CCR0 = UPPER_COUNT_SUPER_SLOW;
+                motor_step_count = 0;
+                accel = 0;
+                stopMainMotor();
+            }
+        }
+
+        TB1CCR1 = TB1CCR0 >> 1;
+
+
+    }
+
 
     TB1CCTL0 &= ~CCIFG;     // Clear interrupt flag
     //TB1CTL &= ~(TBIFG);
@@ -239,33 +317,34 @@ __interrupt void TIMER1_B1_ISR (void) {
         break;
 
     case 0x02:  // TB1CCR1
-        if (++motor_step_count == STEP_COUNT_FOR_MOTOR_CHECK)
-        {
-            motor_step_count = 0;
+//        if (++motor_step_count % STEP_COUNT_FOR_MOTOR_CHECK == 0)
+//        {
+//
+//            switch (direction) {
+//            case CLOCKWISE:
+//                diff = prev_position - curr_position;
+//                break;
+//
+//            case ANTICLOCKWISE:
+//                diff = curr_position - prev_position;
+//                break;
+//
+//            case REST:
+//            default:
+//                //-- VALIDATE THIS
+//                diff = 0;
+//                break;
+//            }
+//
+//            if ( diff > 6 + 1 || diff < 6 - 1 ){
+//                difference = diff;
+//                fault = 1;
+//            }
+//
+//            prev_position = curr_position;
+//        }
 
-            switch (direction) {
-            case CLOCKWISE:
-                diff = prev_position - curr_position;
-                break;
-
-            case ANTICLOCKWISE:
-                diff = curr_position - prev_position;
-                break;
-
-            case REST:
-            default:
-                //-- VALIDATE THIS
-                diff = 0;
-                break;
-            }
-
-            if ( diff > 6 + 1 || diff < 6 - 1 ){
-                difference = diff;
-                fault = 1;
-            }
-
-            prev_position = curr_position;
-        }
+        ++motor_step_count;
         break;
 
     default:
