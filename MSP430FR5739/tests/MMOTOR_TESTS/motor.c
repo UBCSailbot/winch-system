@@ -275,7 +275,7 @@ __interrupt void TIMER1_B0_ISR (void) {
             if (TB1CCR0 > UPPER_COUNT_MID)
             {
                 //if (diff == 0) TB1CCR0 = UPPER_COUNT_SLOW;
-                 TB1CCR0 = TB1CCR0 - (TB1CCR0 >> 4);
+                 TB1CCR0 = TB1CCR0 >> 1;
             }
             else
             {
@@ -287,7 +287,7 @@ __interrupt void TIMER1_B0_ISR (void) {
             if (TB1CCR0 < UPPER_COUNT_SUPER_SLOW)
             {
                 //if (diff == 0) TB1CCR0 = UPPER_COUNT_SLOW;
-                 TB1CCR0 = TB1CCR0 + (TB1CCR0 >> 2);
+                 TB1CCR0 = (TB1CCR0 << 4);
             }
             else
             {
