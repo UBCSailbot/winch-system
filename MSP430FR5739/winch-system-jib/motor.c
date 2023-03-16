@@ -55,7 +55,7 @@ void init_Main_Motor(void) {
     P3SEL0 |= STEP;
     P3OUT &= ~STEP;
 
-    setMotorSpeed(MMOTOR_SLOW);
+    setMotorSpeed(MMOTOR_SUPER_SLOW);
 
     //-- TB1 reg 1 timer setup
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
@@ -145,6 +145,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
 
     if (phase == INIT_MMOTOR) {
         WAIT_RAMPING_DOWN = 0;
+        motor_tracker.fault = 0;
 
         if (motor_stat.setpoint > 360){
             set_error(INVALID_SETPOINT);
@@ -431,7 +432,7 @@ __interrupt void TIMER1_B0_ISR (void) {
             if (TB1CCR0 > UPPER_COUNT_MIN)
             {
                 //if (diff == 0) TB1CCR0 = UPPER_COUNT_SLOW;
-                TB1CCR0 = TB1CCR0 - 335;
+                TB1CCR0 = TB1CCR0 - UPPER_COUNT_DEC;
                 if (TB1CCR0 == 0) TB1CCR0 = UPPER_COUNT_MIN;
             }
             else
@@ -444,7 +445,7 @@ __interrupt void TIMER1_B0_ISR (void) {
             if (TB1CCR0 < UPPER_COUNT_MAX)
             {
                 //if (diff == 0) TB1CCR0 = UPPER_COUNT_SLOW;
-                 TB1CCR0 = TB1CCR0 + 710;
+                 TB1CCR0 = TB1CCR0 + UPPER_COUNT_INC;
                  if (TB1CCR0 == 0) TB1CCR0 = UPPER_COUNT_MAX;
             }
             else
@@ -470,34 +471,34 @@ __interrupt void TIMER1_B1_ISR (void) {
         break;
 
     case 0x02:              //-- TB1CCR1
-//        if (++motor_tracker.steps == STEP_COUNT_FOR_MOTOR_CHECK)
-//        {
-//            motor_tracker.steps = 0;
-//
-//            switch (motor_stat.direction) {
-//            case CLOCKWISE:
-//                diff = motor_stat.position - motor_tracker.last_position;
-//                break;
-//
-//            case ANTICLOCKWISE:
-//                diff = motor_tracker.last_position - motor_stat.position;
-//                break;
-//
-//            case REST:
-//            default:
-//                //-- VALIDATE THIS
-//                diff = 0;
-//                break;
-//            }
-//
-//            if ( diff > EXPECTED_POS_DIFF + 3 || diff < EXPECTED_POS_DIFF - 3 ) {
-//                motor_tracker.fault = 1;
-//                TB1CCTL1 &= ~CCIE;
-//            }
-//
-//            motor_tracker.last_position = motor_stat.position;
-//            difference = diff;
-//        }
+        if (++motor_tracker.steps == STEP_COUNT_FOR_MOTOR_CHECK)
+        {
+            motor_tracker.steps = 0;
+
+            switch (motor_stat.direction) {
+            case CLOCKWISE:
+                diff = motor_stat.position - motor_tracker.last_position;
+                break;
+
+            case ANTICLOCKWISE:
+                diff = motor_tracker.last_position - motor_stat.position;
+                break;
+
+            case REST:
+            default:
+                //-- VALIDATE THIS
+                diff = 0;
+                break;
+            }
+
+            if ( diff > EXPECTED_POS_DIFF + POS_FAULT_LIMIT || diff < EXPECTED_POS_DIFF - POS_FAULT_LIMIT ) {
+                motor_tracker.fault = 1;
+                TB1CCTL1 &= ~CCIE;
+            }
+
+            motor_tracker.last_position = motor_stat.position;
+            difference = diff;
+        }
         break;
 
     default:
