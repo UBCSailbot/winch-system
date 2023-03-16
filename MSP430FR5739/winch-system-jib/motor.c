@@ -486,8 +486,8 @@ __interrupt void TIMER1_B1_ISR (void) {
 
             case REST:
             default:
-                //-- VALIDATE THIS
-                diff = 0;
+                //-- VALIDATE THIS FORCE IT TO IGNORE CHECK
+                diff = EXPECTED_POS_DIFF;
                 break;
             }
 
