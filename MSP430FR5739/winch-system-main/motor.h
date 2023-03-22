@@ -46,7 +46,7 @@
 #define UPPER_COUNT_MIN UPPER_COUNT_MID
 #define UPPER_COUNT_MAX UPPER_COUNT_SLOW
 #define UPPER_COUNT_DEC 355
-#define UPPER_COUNT_INC 71
+#define UPPER_COUNT_INC 711
 
 //-- Motor fault tracking
 #define POS_FAULT_LIMIT     3
