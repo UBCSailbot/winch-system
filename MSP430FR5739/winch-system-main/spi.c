@@ -113,10 +113,13 @@ int receive_hallsensors(unsigned int* pawl_left, int* cam,unsigned int* pawl_rig
  * Return -1 if voltage not in the range 500mV to 4500mV
  */
 int receive_potentiometer(unsigned int* pot_data) {
-    int tries = 0;
+    unsigned char tries = 0;
     unsigned int pot_data_value;
 
     do {
+        //-- 10 ms
+        if (tries > 0) __delay_cycles(10000);
+
         P3OUT &= ~CS_POT;
         pot_data_value = spi_io(0x55, 2, CS_POT);
         P3OUT |= CS_POT;
@@ -152,13 +155,14 @@ int receive_potentiometer(unsigned int* pot_data) {
  */
 int configHall(unsigned int config) {
     int returned_config = 0;
-    int attempts = 0;
+    unsigned char attempts = 0;
 
     do {
 
         if (attempts > 0)
         {
-            __delay_cycles(250000);
+            //-- 10 ms
+            __delay_cycles(10000);
         }
 
         P3OUT &= ~CS_HALL;
