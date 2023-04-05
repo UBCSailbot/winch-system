@@ -38,6 +38,19 @@
 #define UPPER_COUNT_SLOW 22727
 #define MID_COUNT_SLOW 11364
 
+//-- Counts - 22 Hz PWM
+#define UPPER_COUNT_SUPER_SLOW 45454
+#define MID_COUNT_SUPER_SLOW 22727
+
+//-- Ramping Params
+#define UPPER_COUNT_MIN UPPER_COUNT_MID
+#define UPPER_COUNT_MAX UPPER_COUNT_SLOW
+#define UPPER_COUNT_DEC 355
+#define UPPER_COUNT_INC 711
+
+//-- Motor fault tracking
+#define POS_FAULT_LIMIT     3
+
 //-- Range 410 to 3650 therefore POT_SCALAR = (3650 - 410)/360
 #define POT_SCALAR 9
 #define POT_OFFSET POT_MIN_VALUE
@@ -60,7 +73,8 @@
 typedef enum motor_speed {
     MMOTOR_FAST,
     MMOTOR_MID,
-    MMOTOR_SLOW
+    MMOTOR_SLOW,
+    MMOTOR_SUPER_SLOW
 } motor_speed_t;
 
 //-- State of the main motor
@@ -69,6 +83,9 @@ typedef struct motor_status_struct {
     unsigned int position;
     unsigned int direction;
     unsigned int setpoint;
+    volatile unsigned char motor_inc_stat;
+    volatile unsigned char accel;
+    volatile unsigned char running;
 } motor_stat_t;
 
 //-- Tracks the main motor rotations for fault detection

@@ -12,6 +12,7 @@
 int motor_increment;
 unsigned int motor_tries = 0;
 int difference;
+unsigned char WAIT_RAMPING_DOWN = 0;
 
 
 /**
@@ -54,7 +55,7 @@ void init_Main_Motor(void) {
     P3SEL0 |= STEP;
     P3OUT &= ~STEP;
 
-    setMotorSpeed(MMOTOR_SLOW);
+    setMotorSpeed(MMOTOR_SUPER_SLOW);
 
     //-- TB1 reg 1 timer setup
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
@@ -62,6 +63,7 @@ void init_Main_Motor(void) {
 
     //-- Enable port that is connected to input 4 on the motor controller
     P1DIR |= ON_MOTOR;
+    P1REN |= ON_MOTOR;
     P1OUT &= ~ON_MOTOR;
 
     setCurrentPosition();
@@ -108,7 +110,9 @@ int incrementMainMotor(int dir, int increment) {
 
     motor_increment = increment;
 
-    setMotorSpeed(MMOTOR_SLOW);
+    setMotorSpeed(MMOTOR_SUPER_SLOW);
+
+    motor_stat.motor_inc_stat = 1;
 
     startMainMotor();
 
@@ -140,6 +144,8 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
     int ret;
 
     if (phase == INIT_MMOTOR) {
+        WAIT_RAMPING_DOWN = 0;
+        motor_tracker.fault = 0;
 
         if (motor_stat.setpoint > 360){
             set_error(INVALID_SETPOINT);
@@ -174,9 +180,15 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         //-- Init the tries to 0
         motor_tries = 0;
 
-        setMotorSpeed(MMOTOR_MID);
+        setMotorSpeed(MMOTOR_SLOW);
+
+        motor_stat.accel = 1;
+        motor_stat.motor_inc_stat = 0;
 
         startMainMotor();
+
+        TB1CCTL0 |= CCIE;   // Enable interrupts on reg 0
+        TB1CCTL1 |= CCIE;   // Enable interrupts on reg 1
 
         return COMPLETE;
 
@@ -196,6 +208,9 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         }
 
         ret = setDirectionToMove(motor_stat.setpoint);
+
+        if (WAIT_RAMPING_DOWN) goto RAMP_WAIT;
+
         if (ret < 0) {
             set_error(SET_DIR_TO_MOVE_ERROR);
             return ERROR;
@@ -204,10 +219,16 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
         if (motor_stat.direction == REST) {
 
             //-- This stops it from moving in the specified direction
-            stopMainMotor();
+            motor_stat.accel = 0;
+
+            WAIT_RAMPING_DOWN = 1;
+RAMP_WAIT:
+            if (motor_stat.running) return RUN_AGAIN;
 
             //-- We don't want to power off the motor as it should retain its position until pawls are engaged
             //turnOffMotor();
+
+            WAIT_RAMPING_DOWN = 0;
             return COMPLETE;
         }
 
@@ -233,6 +254,10 @@ void stopMainMotor(void) {
     TB1CCTL1 &= ~OUT;        // Force output to zero
 
     TB1CCTL1 &= ~CCIE;
+    TB1CCTL0 &= ~CCIE;
+
+    motor_stat.running = 0;
+    motor_stat.accel = 0;
 }
 
 static void startMainMotor(void) {
@@ -241,12 +266,12 @@ static void startMainMotor(void) {
     TB1CTL |= MC_1;                 // Count up mode
     TB1CCTL1 |= OUTMOD_2;           // Toggle reset mode
 
+    motor_stat.running = 1;
+
     //-- Update the last known position before safety check occurs
     motor_tracker.last_position = motor_stat.position;
 
     motor_tracker.steps = 0;
-
-    TB1CCTL1 |= CCIE;               // Enable interrupts on reg 1
 }
 
 void turnOnMotor(void) {
@@ -360,10 +385,16 @@ void setMotorSpeed(motor_speed_t speed_sel) {
         break;
 
     case MMOTOR_SLOW:
-    default:
         //-- TB1 reg 1 timer setup
         TB1CCR0 = UPPER_COUNT_SLOW - 1;
         TB1CCR1 = MID_COUNT_SLOW;
+        break;
+
+    case MMOTOR_SUPER_SLOW:
+    default:
+        //-- TB1 reg 1 timer setup
+        TB1CCR0 = UPPER_COUNT_SUPER_SLOW - 1;
+        TB1CCR1 = MID_COUNT_SUPER_SLOW;
         break;
     }
 }
@@ -379,17 +410,52 @@ unsigned char checkMotorFaultAndClear(void) {
 #pragma vector = TIMER1_B0_VECTOR;
 __interrupt void TIMER1_B0_ISR (void) {
 
-    //-- Decrement no. of steps, if zero stop motor
-    if (motor_increment <= 0) {
-        TB1CCTL0 &= ~CCIE;  // Disable interrupts
-        stopMainMotor();
+    if (motor_stat.motor_inc_stat)
+    {
+        //-- Decrement no. of steps, if zero stop motor
+        if (motor_increment <= 0) {
+            TB1CCTL0 &= ~CCIE;  // Disable interrupts
+            stopMainMotor();
 
-        //-- Do not turn power off to the motor because it needs to retain its position
-        //turnOffMotor();
+            //-- Do not turn power off to the motor because it needs to retain its position
+            //turnOffMotor();
 
-        motor_increment = 0;
-    } else {
-        motor_increment--;
+            motor_increment = 0;
+        } else {
+            motor_increment--;
+        }
+    }
+    else
+    {
+        if (motor_stat.accel)
+        {
+            if (TB1CCR0 > UPPER_COUNT_MIN)
+            {
+                //if (diff == 0) TB1CCR0 = UPPER_COUNT_SLOW;
+                TB1CCR0 = TB1CCR0 - UPPER_COUNT_DEC;
+                if (TB1CCR0 == 0) TB1CCR0 = UPPER_COUNT_MIN;
+            }
+            else
+            {
+                TB1CCR0 = UPPER_COUNT_MIN;
+            }
+        }
+        else
+        {
+            if (TB1CCR0 < UPPER_COUNT_MAX)
+            {
+                //if (diff == 0) TB1CCR0 = UPPER_COUNT_SLOW;
+                 TB1CCR0 = TB1CCR0 + UPPER_COUNT_INC;
+                 if (TB1CCR0 == 0) TB1CCR0 = UPPER_COUNT_MAX;
+            }
+            else
+            {
+                TB1CCR0 = UPPER_COUNT_MAX;
+                stopMainMotor();
+            }
+        }
+
+        TB1CCR1 = TB1CCR0 >> 2;
     }
 
     TB1CCTL0 &= ~CCIFG;     // Clear interrupt flag
@@ -420,12 +486,12 @@ __interrupt void TIMER1_B1_ISR (void) {
 
             case REST:
             default:
-                //-- VALIDATE THIS
-                diff = 0;
+                //-- VALIDATE THIS FORCE IT TO IGNORE CHECK
+                diff = EXPECTED_POS_DIFF;
                 break;
             }
 
-            if ( diff > EXPECTED_POS_DIFF + 1 || diff < EXPECTED_POS_DIFF - 1 ) {
+            if ( diff > EXPECTED_POS_DIFF + POS_FAULT_LIMIT || diff < EXPECTED_POS_DIFF - POS_FAULT_LIMIT ) {
                 motor_tracker.fault = 1;
                 TB1CCTL1 &= ~CCIE;
             }

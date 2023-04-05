@@ -27,6 +27,26 @@
 #define UPPER_COUNT 5682
 #define MID_COUNT 2841
 
+//-- Counts - 352 Hz PWM
+#define UPPER_COUNT_FAST 2842
+#define MID_COUNT_FAST 1421
+
+//-- Counts - 176 Hz PWM
+#define UPPER_COUNT_MID 5682
+#define MID_COUNT_MID 2841
+
+////-- 44 Hz PWM
+#define UPPER_COUNT_SLOW 22727
+#define MID_COUNT_SLOW 11364
+
+//-- Counts - 22 Hz PWM
+#define UPPER_COUNT_SUPER_SLOW 45454
+#define MID_COUNT_SUPER_SLOW 22727
+
+//-- Counts - 11 Hz PWM
+#define UPPER_COUNT_SUPER_SUPER_SLOW 90908
+#define MID_COUNT_SUPER_SUPER_SLOW 45454
+
 //-- Range 410 to 3685 therefore POT_SCALAR = (3685 - 410)/360
 #define POT_SCALAR 9
 #define POT_OFFSET 410
