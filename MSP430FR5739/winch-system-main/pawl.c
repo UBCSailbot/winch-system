@@ -17,6 +17,7 @@
 unsigned int motor_inc_tries = 0;
 unsigned int dir = 0;
 char move_cam = 0;
+unsigned int direction;
 
 /**
  * Set the state of the paws to either engaged or disengaged
@@ -35,44 +36,198 @@ char move_cam = 0;
  * Return: negative when error, 0 when success and 1 when pawl position reached
  */
 t_ret_code move_pawl(unsigned int phase) {
-    unsigned int direction;
-    unsigned int wait_motor = 0;
+    t_ret_code ret;
 
-    t_ret_code ret = COMPLETE;
-
-    direction = getCurrentCachedDirectionToMove();
-
-    //-- Fault active low
-    while (1) {
-        if ((PJIN & NFAULT) || (PJOUT & NSLEEP)) {
-            break;
-        } else {
-            // 10 ms
-            __delay_cycles(10000);
-        }
-
-        if (wait_motor++ > 5) {
-            V_PRINTF("NFAULT");
-            set_error(MOTOR_NFAULT);
-            return ERROR;
-        }
-    }
-
-    switch(direction) {
-    case CLOCKWISE:
-        ret = disengageLeft(phase);
+    switch (phase)
+    {
+    case INIT_PAWL:
+        ret = setup_pawl();
         break;
-    case ANTICLOCKWISE:
-        ret = disengageRight(phase);
+    case RUN_PAWL:
+        ret = pawl_action();
         break;
-    case REST:
-        ret = engageBoth(phase);
+    default:
+        ret = ERROR;
         break;
-
     }
 
     return ret;
 }
+
+static t_ret_code setup_pawl(void)
+{
+    t_ret_code ret = COMPLETE;
+
+    if ((PJIN & NFAULT) || (PJOUT & NSLEEP)) {
+        ret = COMPLETE;
+    } else {
+        ret = ERROR;
+    }
+
+    direction = getCurrentCachedDirectionToMove();
+
+    switch(direction) {
+    case CLOCKWISE:
+        pawl_track.CAM_DIR = BACKWARD;
+        pawl_track.engaged_pawl = LEFT;
+        break;
+    case ANTICLOCKWISE:
+        pawl_track.CAM_DIR = FORWARD;
+        pawl_track.engaged_pawl = RIGHT;
+        break;
+    case REST:
+        pawl_track.CAM_DIR = FORWARD;
+        pawl_track.engaged_pawl = NONE;
+    default:
+        ret = ERROR;
+        break;
+    }
+
+    return ret;
+}
+
+static t_ret_code pawl_action(void)
+{
+    t_ret_code ret = RUN_AGAIN;
+    unsigned int pawl_val;
+
+    //-- Perform GET SPI
+    //-- Update Direction changed
+    //-- Check Exit condition
+    //-- Turn on Motor
+
+    ret = get_spi(&pawl_val);
+    if (ret != COMPLETE) return ret;
+
+    ret = update_dir(pawl_val);
+    if (ret != COMPLETE) return ret;
+
+    ret = check_exit(pawl_val);
+    if (ret != RUN_AGAIN) return ret;
+
+    ret = turn_on_gmotor();
+    if (ret != COMPLETE) return ret;
+
+    return RUN_AGAIN;
+
+}
+
+
+//-- Get spi functions
+static t_ret_code get_spi(unsigned int *pawl_val)
+{
+    t_ret_code ret = COMPLETE;
+
+    switch(pawl_track.engaged_pawl)
+    {
+    case RIGHT:
+        break;
+    case LEFT:
+        break;
+    case NONE:
+        break;
+    default:
+        break;
+    }
+
+    return ret;
+}
+
+
+//-- Update dir functions
+static t_ret_code update_dir(unsigned int pawl_val)
+{
+    t_ret_code ret = COMPLETE;
+
+    switch(pawl_track.engaged_pawl)
+    {
+    case RIGHT:
+    case LEFT:
+        break;
+
+    case NONE:
+        if ((int)pawl_val > CAM_MID) {
+            //-- Go backward
+            pawl_track.CAM_DIR = BACKWARD;
+        } else {
+            //-- Go forward
+            pawl_track.CAM_DIR = FORWARD;
+        }
+        break;
+    default:
+        ret = ERROR;
+        break;
+    }
+
+    return ret;
+}
+
+//-- Check Exit conditions
+static t_ret_code check_exit(unsigned int pawl_val)
+{
+    t_ret_code ret = COMPLETE;
+
+    switch(pawl_track.engaged_pawl)
+    {
+    case RIGHT:
+        break;
+
+    case LEFT:
+        break;
+
+    case NONE:
+        break;
+    default:
+        ret = ERROR;
+        break;
+    }
+
+    return ret;
+}
+
+//-- Turn on Motor
+static t_ret_code turn_on_gmotor(void)
+{
+    t_ret_code ret = COMPLETE;
+    unsigned char inc_motor;
+
+    switch(pawl_track.engaged_pawl)
+    {
+    case RIGHT:
+        inc_motor = CLOCKWISE;
+        break;
+    case LEFT:
+        inc_motor = ANTICLOCKWISE;
+        break;
+    case NONE:
+        inc_motor = REST;
+        break;
+    default:
+        ret = ERROR;
+        return ret;
+    }
+
+    if (!isGearMotorOn() && !isMotorRunning()) {
+        //-- If gear motor has timed out
+        if (++pawl_track.tries.motor_inc > MAX_TRIES) {
+            set_error(MAX_MOTOR_INC);
+            ret =  ERROR;
+        }
+
+        if (inc_motor)
+        {
+            ret = incrementMainMotor(inc_motor, 5);
+        }
+
+        //-- Start gear motor again
+        startGearMotor(pawl_track.CAM_DIR, MEDIUM, 200);
+    }
+
+    return ret;
+}
+
+
+
 
 static t_ret_code disengageRight(unsigned int phase) {
     unsigned int pawl_right;
