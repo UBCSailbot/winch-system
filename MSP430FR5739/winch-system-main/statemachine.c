@@ -153,11 +153,11 @@ static void statemachine(void) {
         break;
 
     case START_ENGAGE_PAWL:
-        ret_val = engageBoth(INIT_PAWL);
+        ret_val = move_pawl(INIT_PAWL);
         break;
 
     case WAIT_ENGAGE_PAWL:
-        ret_val = engageBoth(RUN_PAWL);
+        ret_val = move_pawl(RUN_PAWL);
         break;
 
     case TURN_MOTOR_OFF:
@@ -280,20 +280,23 @@ static int abort_action(void) {
    int ret;
 
    //-- Halt motor operation
-  stopMainMotor();
+   stopMainMotor();
 
    //-- Have motor on before we move pawls
    turnOnMotor();
 
+   //-- Force direction to be Rest
+   setCurrentCachedDirectionToMove(REST);
+
     //-- Engage pawl
-   ret = engageBoth(INIT_PAWL);
+   ret = move_pawl(INIT_PAWL);
    if (ret == ERROR) {
        return -1;
    }
 
    //-- Perform this function until either error or returns 1
    do {
-       ret = engageBoth(RUN_PAWL);
+       ret = move_pawl(RUN_PAWL);
 
        //-- If there something is wrong error
        if (ret == ERROR) {

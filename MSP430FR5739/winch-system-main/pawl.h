@@ -28,6 +28,17 @@ typedef enum pawl_type{
     NONE
 }pawl_type_t;
 
+//-- Pawl action states
+typedef enum pawl_action_states{
+    GET_SPI,
+    UPDATE_DIR,
+    CHECK_EXIT_COND,
+    RUN_GMOTOR,
+    END_ACTION,
+    SEND_ERROR,
+    MAX_STATE_NUM
+}t_pawl_state;
+
 //-- Pawl threshold values
 #define RIGHT_THRES 0xfb00
 #define LEFT_THRES  0xf580
@@ -78,14 +89,14 @@ static t_ret_code check_exit(unsigned int pawl_val);
 static t_ret_code turn_on_gmotor(void);
 
 
-//-- Disengages right pawl by controlling gear motor
-static t_ret_code disengageRight(unsigned int phase);
-
-//-- Disengages left pawl by controlling gear motor
-static t_ret_code disengageLeft(unsigned int phase);
-
-//-- Disengages both pawls by controlling gear motor
-t_ret_code engageBoth(unsigned int phase);
+////-- Disengages right pawl by controlling gear motor
+//static t_ret_code disengageRight(unsigned int phase);
+//
+////-- Disengages left pawl by controlling gear motor
+//static t_ret_code disengageLeft(unsigned int phase);
+//
+////-- Disengages both pawls by controlling gear motor
+//t_ret_code engageBoth(unsigned int phase);
 
 
 

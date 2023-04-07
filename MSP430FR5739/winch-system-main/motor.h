@@ -135,6 +135,9 @@ unsigned int getCurrentCachedPosition(void);
 // Calculates which direction to move and sets the value to the motor state
 int setDirectionToMove(unsigned int setpoint);
 
+// Set the cached direction val
+void setCurrentCachedDirectionToMove(unsigned int direction);
+
 // Get saved direction value from the last call to setDirectionToMove
 unsigned int getCurrentCachedDirectionToMove(void);
 
