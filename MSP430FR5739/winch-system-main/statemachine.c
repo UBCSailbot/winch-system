@@ -153,6 +153,7 @@ static void statemachine(void) {
         break;
 
     case START_ENGAGE_PAWL:
+        setCurrentCachedDirectionToMove(REST);
         ret_val = move_pawl(INIT_PAWL);
         break;
 

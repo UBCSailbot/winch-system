@@ -51,7 +51,7 @@ unsigned int direction;
  * Return: negative when error, 0 when success and 1 when pawl position reached
  */
 t_ret_code move_pawl(unsigned int phase) {
-    t_ret_code ret;
+    t_ret_code ret = COMPLETE;
 
     switch (phase)
     {
@@ -94,6 +94,7 @@ static t_ret_code setup_pawl(void)
         pawl_track.CAM_DIR = FORWARD;
         pawl_track.engaged_pawl = NONE;
     default:
+        set_error(INVALID_DIR);
         ret = ERROR;
         break;
     }
@@ -146,13 +147,19 @@ static t_ret_code get_spi(unsigned int *pawl_val)
         err = receive_hallsensors(NULL, (int *) pawl_val, NULL);
         break;
     default:
-        break;
+        ret = ERROR;
+        return ret;
     }
 
     if (err < 0)
     {
         pawl_track.tries.read_spi++;
         ret = RUN_AGAIN;
+    }
+    else
+    {
+        pawl_track.tries.read_spi = 0;
+        ret = COMPLETE;
     }
 
     if (pawl_track.tries.read_spi > MAX_TRIES) {
@@ -184,7 +191,7 @@ static t_ret_code update_dir(unsigned int pawl_val)
         break;
     default:
         ret = ERROR;
-        break;
+        return ret;
     }
 
     return ret;
@@ -240,8 +247,6 @@ static t_ret_code check_exit(unsigned int pawl_val)
                 startGearMotor(pawl_track.CAM_DIR, SLOW, 1000);
             }
         }
-
-
         break;
     default:
         ret = ERROR;
@@ -273,7 +278,8 @@ static t_ret_code turn_on_gmotor(void)
         return ret;
     }
 
-    if (!isGearMotorOn() && !isMotorRunning()) {
+    if (!isGearMotorOn() && !isMotorRunning())
+    {
         //-- If gear motor has timed out
         if (++pawl_track.tries.motor_inc > MAX_TRIES) {
             set_error(MAX_MOTOR_INC);
