@@ -15,8 +15,10 @@ void init(void);
  */
 int main(void)
 {
-	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
+	WDTCTL = WDT_ARST_1000;	// start WDT
+
 	init();
+
 	V_PRINTF("MAIN\r\n");
 
 	handle_commands();
