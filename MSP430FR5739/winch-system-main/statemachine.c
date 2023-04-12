@@ -12,6 +12,7 @@
 #include "pawl.h"
 #include "debug.h"
 #include "error.h"
+#include "stopwatch.h"
 
 //-- Include uart.h in header file
 
@@ -72,6 +73,8 @@ static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
 void handle_commands(void) {
     char rx_msg[RXBUF_LEN] = "";
 
+    //init_capture_timer();
+
     while (1) {
 
         if (isReady()) {
@@ -84,6 +87,8 @@ void handle_commands(void) {
         }
 
         statemachine();
+
+        WDTCTL = WDT_ARST_1000;
 
         //-- 1000 Hz
         __delay_cycles(1000);
@@ -102,7 +107,7 @@ static void statemachine(void) {
 
     case IDLE:
         //--  Idle turn off cpu
-        LPM0;
+        //LPM0;
         break;
 
     case DECODE:
@@ -137,7 +142,9 @@ static void statemachine(void) {
 
     //-- SET_POS states
     case START_PAWL:
+//        start_stopwatch();
         ret_val = move_pawl(INIT_PAWL);
+//        V_PRINTF("SP.DT: %d",stop_stopwatch());
         break;
 
     case WAIT_PAWL:
@@ -280,7 +287,7 @@ static int abort_action(void) {
    int ret;
 
    //-- Halt motor operation
-  stopMainMotor();
+   stopMainMotor();
 
    //-- Have motor on before we move pawls
    turnOnMotor();

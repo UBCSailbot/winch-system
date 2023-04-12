@@ -41,6 +41,37 @@ typedef enum States {
     MAX_STATE
 } t_state;
 
+static char * states_str[MAX_STATE + 1] = {
+    "IDLE",
+    "DECODE",
+
+    /* SET_POS */
+    "SET_DIRECTION",
+    "TURN_MOTOR_ON",
+    "START_PAWL",
+    "WAIT_PAWL",
+    "START_MOTOR",
+    "WAIT_MOTOR",
+    "START_ENGAGE_PAWL",
+    "WAIT_ENGAGE_PAWL",
+    "TURN_MOTOR_OFF",
+
+    /* QUERY */
+    "GET_POSITION",
+
+    /* STOP&LOCK */
+    "ABORT",
+
+    /* COMMON */
+    "SEND_TO_UCCM",
+    "ERROR_STATE",
+
+    /* RESET */
+    "RESET_MSP",
+
+    "MAX_STATE"
+};
+
 //-- HEADER MSGS 3 bits
 #define SETPOS_MSG          0x1
 #define QUERYPOS_MSG        0x2

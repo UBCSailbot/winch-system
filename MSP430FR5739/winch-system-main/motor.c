@@ -339,6 +339,13 @@ unsigned int getCurrentCachedDirectionToMove(void) {
 }
 
 /**
+ * Sets the cached direction value
+ */
+void setCurrentCachedDirectionToMove(unsigned int direction) {
+    motor_stat.direction = direction;
+}
+
+/**
  * This function is used to figure out what direction the motor should move
  * It changes it the motor status to reflect the calculated direction
  *
