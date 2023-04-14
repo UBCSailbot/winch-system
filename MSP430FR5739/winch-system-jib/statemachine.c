@@ -66,14 +66,14 @@ static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
  {ERROR_STATE,      ABORT,               ABORT,               ABORT},
 
  //---- RESET_MSP ----
- {RESET_MSP,        ABORT,               ERROR_STATE,         ABORT}
+ {RESET_MSP,        SEND_TO_UCCM,        ERROR_STATE,         ABORT}
 };
 
 
 void handle_commands(void) {
     char rx_msg[RXBUF_LEN] = "";
 
-    init_capture_timer();
+    //init_capture_timer();
 
     while (1) {
 
