@@ -15,8 +15,8 @@
 #define STEP BIT4;
 #define DIR BIT2;
 
-//-- Port P1.0
-#define ON_MOTOR BIT0
+//-- Port P3.3
+#define ON_MOTOR BIT3
 
 #define OFF 0
 #define ON 1
@@ -134,6 +134,9 @@ unsigned int getCurrentCachedPosition(void);
 
 // Calculates which direction to move and sets the value to the motor state
 int setDirectionToMove(unsigned int setpoint);
+
+// Set the cached direction val
+void setCurrentCachedDirectionToMove(unsigned int direction);
 
 // Get saved direction value from the last call to setDirectionToMove
 unsigned int getCurrentCachedDirectionToMove(void);

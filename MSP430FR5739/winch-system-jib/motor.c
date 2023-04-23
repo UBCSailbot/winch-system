@@ -62,9 +62,9 @@ void init_Main_Motor(void) {
     TB1CTL |= TBSSEL_2;             // SMCLK 1 Mhz
 
     //-- Enable port that is connected to input 4 on the motor controller
-    P1DIR |= ON_MOTOR;
-    P1REN |= ON_MOTOR;
-    P1OUT &= ~ON_MOTOR;
+    P3DIR |= ON_MOTOR;
+    //P1REN |= ON_MOTOR;
+    P3OUT &= ~ON_MOTOR;
 
     setCurrentPosition();
 }
@@ -204,6 +204,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
             V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
             stopMainMotor();
             set_error(MMOTOR_FAULT);
+            motor_tracker.fault = 0;
             return ERROR;
         }
 
@@ -275,12 +276,12 @@ static void startMainMotor(void) {
 }
 
 void turnOnMotor(void) {
-    P1OUT |= ON_MOTOR;
+    P3OUT |= ON_MOTOR;
     motor_stat.power = ON;
 }
 
 void turnOffMotor(void) {
-    P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
+    P3OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
     motor_stat.power = OFF;
 }
 
@@ -401,8 +402,6 @@ void setMotorSpeed(motor_speed_t speed_sel) {
 
 unsigned char checkMotorFaultAndClear(void) {
     unsigned char fault_tmp = motor_tracker.fault;
-    motor_tracker.fault = 0;
-
     return fault_tmp;
 }
 
@@ -475,21 +474,30 @@ __interrupt void TIMER1_B1_ISR (void) {
         {
             motor_tracker.steps = 0;
 
-            switch (motor_stat.direction) {
-            case CLOCKWISE:
+            if (motor_stat.position >= motor_tracker.last_position)
+            {
                 diff = motor_stat.position - motor_tracker.last_position;
-                break;
-
-            case ANTICLOCKWISE:
-                diff = motor_tracker.last_position - motor_stat.position;
-                break;
-
-            case REST:
-            default:
-                //-- VALIDATE THIS FORCE IT TO IGNORE CHECK
-                diff = EXPECTED_POS_DIFF;
-                break;
             }
+            else
+            {
+                diff = motor_tracker.last_position - motor_stat.position;
+            }
+
+//            switch (motor_stat.direction) {
+//            case CLOCKWISE:
+//                diff = motor_stat.position - motor_tracker.last_position;
+//                break;
+//
+//            case ANTICLOCKWISE:
+//                diff = motor_tracker.last_position - motor_stat.position;
+//                break;
+//
+//            case REST:
+//            default:
+//                //-- VALIDATE THIS FORCE IT TO IGNORE CHECK
+//                diff = EXPECTED_POS_DIFF;
+//                break;
+//            }
 
             if ( diff > EXPECTED_POS_DIFF + POS_FAULT_LIMIT || diff < EXPECTED_POS_DIFF - POS_FAULT_LIMIT ) {
                 motor_tracker.fault = 1;

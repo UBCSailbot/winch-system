@@ -12,6 +12,7 @@
 #include "pawl.h"
 #include "debug.h"
 #include "error.h"
+#include "stopwatch.h"
 
 //-- Include uart.h in header file
 
@@ -56,7 +57,7 @@ static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
  {GET_POSITION,      SEND_TO_UCCM,       ERROR_STATE,         ABORT},
 
  //---- ABORT ----
- {ABORT,             SEND_TO_UCCM,       ERROR_STATE,         ABORT},
+ {ABORT,             SEND_TO_UCCM,       RESET_MSP,         ABORT},
 
  //---- SEND_TO_UCCM ----
  {SEND_TO_UCCM,      IDLE,               ERROR_STATE,         ABORT},
@@ -65,12 +66,14 @@ static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
  {ERROR_STATE,      ABORT,               ABORT,               ABORT},
 
  //---- RESET_MSP ----
- {RESET_MSP,        ABORT,               ERROR_STATE,         ABORT}
+ {RESET_MSP,        SEND_TO_UCCM,        ERROR_STATE,         RESET_MSP}
 };
 
 
 void handle_commands(void) {
     char rx_msg[RXBUF_LEN] = "";
+
+    //init_capture_timer();
 
     while (1) {
 
@@ -84,6 +87,8 @@ void handle_commands(void) {
         }
 
         statemachine();
+
+        WDTCTL = WDT_ARST_1000;
 
         //-- 1000 Hz
         __delay_cycles(1000);
@@ -102,7 +107,7 @@ static void statemachine(void) {
 
     case IDLE:
         //--  Idle turn off cpu
-        LPM0;
+        low_power_mode();
         break;
 
     case DECODE:
@@ -137,7 +142,9 @@ static void statemachine(void) {
 
     //-- SET_POS states
     case START_PAWL:
+//        start_stopwatch();
         ret_val = move_pawl(INIT_PAWL);
+//        V_PRINTF("SP.DT: %d",stop_stopwatch());
         break;
 
     case WAIT_PAWL:
@@ -280,7 +287,7 @@ static int abort_action(void) {
    int ret;
 
    //-- Halt motor operation
-  stopMainMotor();
+   stopMainMotor();
 
    //-- Have motor on before we move pawls
    turnOnMotor();
@@ -319,4 +326,10 @@ t_state get_next_state(t_state current_state, t_ret_code returned_code) {
     }
 
     return next_state;
+}
+
+void low_power_mode(void)
+{
+    WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
+    LPM0;                       // turn off CPU
 }
