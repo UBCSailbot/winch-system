@@ -22,7 +22,7 @@ void init_uart(void) {
     UCA1CTLW0 |= UCSWRST + UCSSEL__SMCLK;   // Initially set UART A1 to reset and select SMCLK 1Mhz clk
 
     UCA1BRW = 0x6;
-    UCA1MCTLW |= UCOS16 + 0x2080; // config for baud 9600 with 1Mhz clk. OCOS16 - 1, UCBRF = 0x80 (Lower Byte) and UCBRS = 0x20 (Upper Byte)
+    UCA1MCTLW |= UCOS16 + 0x1180; // config for baud 9600 with 1Mhz clk. OCOS16 - 1, UCBRF = 0x80 (Lower Byte) and UCBRS = 0x11 (Upper Byte)
 
     //-- Port 2, pin 6 USBTX and 5 USBRX
     P2SEL1 |= BIT5 + BIT6;       // Pin 5 and 6 are UCA1 TXD and RXD respectively
@@ -76,52 +76,71 @@ void putString(char* message) {
 }
 
 //-- USCI_A1 interrupt ISR
+//#pragma vector = USCI_A1_VECTOR
+//__interrupt void USCI_A1_ISR(void) {
+//    char received_char = UCA1RXBUF;
+//
+//    switch(__even_in_range(UCA1IV,18)) {
+//    case 0x00: // No interrupts
+//        break;
+//    case 0x02: // Vector 2: UCRXIFG
+//        switch(uart_state) {
+//            case PROCESS:
+//                if (received_char == '\n' || received_char == '\r') {
+//                    // SUCCES as line ends after 2 bytes
+//                    rx_flag = 1;
+//                    rxbuf[bufpos] = '\0';
+//                    LPM0_EXIT;
+//                    uart_state = READ;
+//                } else {
+//                    uart_state = WAIT;
+//                }
+//
+//                bufpos = 0;
+//                break;
+//
+//            case READ:
+//
+//                if (c == '\n' || c == '\r') {
+//                    // Less than 2 bytes - reset buffer position
+//                    bufpos = 0;
+//                } else {
+//                    rxbuf[bufpos] = c;
+//                    bufpos++;
+//
+//                    if (bufpos == RXBUF_LEN) uart_state = PROCESS; // If we reached the end of the buffer Proccess it
+//                }
+//
+//                break;
+//
+//            case WAIT:
+//                // Go to read state when receiving end of character and rx_flag is not set
+//                if ((c == '\n' || c == '\r') && !rx_flag) uart_state = READ;
+//                break;
+//
+//            default:
+//                break;
+//        }
+//        break;
+//    case 0x04: // Vector 4: UCTXIFG
+//        break;
+//    default:
+//        break;
+//    }
+//}
+
+//-- TEST UART
 #pragma vector = USCI_A1_VECTOR
 __interrupt void USCI_A1_ISR(void) {
     char c = 0;
-
     switch(__even_in_range(UCA1IV,18)) {
     case 0x00: // No interrupts
         break;
     case 0x02: // Vector 2: UCRXIFG
+
         c = UCA1RXBUF;
-        switch(uart_state) {
-        case PROCESS:
-            if (c == '\n' || c == '\r') {
-                // SUCCES as line ends after 2 bytes
-                rx_flag = 1;
-                rxbuf[bufpos] = '\0';
-                LPM0_EXIT;
-                uart_state = READ;
-            } else {
-                uart_state = WAIT;
-            }
+        UCA1TXBUF = c;
 
-            bufpos = 0;
-            break;
-
-        case READ:
-
-            if (c == '\n' || c == '\r') {
-                // Less than 2 bytes - reset buffer position
-                bufpos = 0;
-            } else {
-                rxbuf[bufpos] = c;
-                bufpos++;
-
-                if (bufpos == RXBUF_LEN) uart_state = PROCESS; // If we reached the end of the buffer Proccess it
-            }
-
-            break;
-
-        case WAIT:
-            // Go to read state when receiving end of character and rx_flag is not set
-            if ((c == '\n' || c == '\r') && !rx_flag) uart_state = READ;
-            break;
-
-        default:
-            break;
-        }
         break;
     case 0x03: // Vector 4: UCTXIFG
         break;
@@ -129,24 +148,4 @@ __interrupt void USCI_A1_ISR(void) {
         break;
     }
 }
-
-//-- TEST UART
-//#pragma vector = USCI_A1_VECTOR
-//__interrupt void USCI_A1_ISR(void) {
-//    char c = 0;
-//    switch(__even_in_range(UCA1IV,18)) {
-//    case 0x00: // No interrupts
-//        break;
-//    case 0x02: // Vector 2: UCRXIFG
-//
-//        c = UCA1RXBUF;
-//        UCA1TXBUF = c;
-//
-//        break;
-//    case 0x03: // Vector 4: UCTXIFG
-//        break;
-//    default:
-//        break;
-//    }
-//}
 
