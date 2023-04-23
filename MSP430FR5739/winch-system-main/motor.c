@@ -62,8 +62,8 @@ void init_Main_Motor(void) {
     TB1CTL |= TBSSEL_2;             // SMCLK 1 Mhz
 
     //-- Enable port that is connected to input 4 on the motor controller
-    P1DIR |= ON_MOTOR;
-    P1OUT &= ~ON_MOTOR;
+    P3DIR |= ON_MOTOR;
+    P3OUT &= ~ON_MOTOR;
 
     setCurrentPosition();
 }
@@ -274,12 +274,12 @@ static void startMainMotor(void) {
 }
 
 void turnOnMotor(void) {
-    P1OUT |= ON_MOTOR;
+    P3OUT |= ON_MOTOR;
     motor_stat.power = ON;
 }
 
 void turnOffMotor(void) {
-    P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
+    P3OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
     motor_stat.power = OFF;
 }
 
