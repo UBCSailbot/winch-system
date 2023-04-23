@@ -110,4 +110,6 @@ static int abort_action(void);
 //-- Uses a next state lookup to get the next state depending on the retunred code
 t_state get_next_state(t_state current_state, t_ret_code returned_code);
 
+void low_power_mode(void);
+
 #endif /* STATEMACHINE_H_ */

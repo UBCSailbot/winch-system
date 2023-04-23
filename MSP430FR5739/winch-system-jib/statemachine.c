@@ -57,7 +57,7 @@ static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
  {GET_POSITION,      SEND_TO_UCCM,       ERROR_STATE,         ABORT},
 
  //---- ABORT ----
- {ABORT,             SEND_TO_UCCM,       ERROR_STATE,         ABORT},
+ {ABORT,             SEND_TO_UCCM,       RESET_MSP,         ABORT},
 
  //---- SEND_TO_UCCM ----
  {SEND_TO_UCCM,      IDLE,               ERROR_STATE,         ABORT},
@@ -66,7 +66,7 @@ static const t_state next_state_lookup_table[MAX_STATE][MAX_RET_CODE] =
  {ERROR_STATE,      ABORT,               ABORT,               ABORT},
 
  //---- RESET_MSP ----
- {RESET_MSP,        SEND_TO_UCCM,        ERROR_STATE,         ABORT}
+ {RESET_MSP,        SEND_TO_UCCM,        ERROR_STATE,         RESET_MSP}
 };
 
 
@@ -107,7 +107,7 @@ static void statemachine(void) {
 
     case IDLE:
         //--  Idle turn off cpu
-        //LPM0;
+        low_power_mode();
         break;
 
     case DECODE:
@@ -181,8 +181,8 @@ static void statemachine(void) {
         V_PRINTF("ABORT");
         //-- Primary action to stop winch functionality
         if (abort_action() < 0) {
-            //-- Perform a PUC reset? TODO: count the number of abort error and reset
-            V_PRINTF("ABORT ERR\r\n");
+            set_current_header(RESET_MSG);
+            ret_val = ERROR;
         }
 
         break;
@@ -326,4 +326,10 @@ t_state get_next_state(t_state current_state, t_ret_code returned_code) {
     }
 
     return next_state;
+}
+
+void low_power_mode(void)
+{
+    WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
+    LPM0;                       // turn off CPU
 }
