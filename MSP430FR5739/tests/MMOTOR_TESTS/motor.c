@@ -53,8 +53,8 @@ void init_Main_Motor(void) {
     TB1CTL |= TBSSEL_2;             // SMCLK 1 Mhz
 
     //-- Enable port that is connected to input 4 on the motor controller
-    P1DIR |= ON_MOTOR;
-    P1OUT &= ~ON_MOTOR;
+    P3DIR |= ON_MOTOR;
+    P3OUT &= ~ON_MOTOR;
 }
 
 int incrementMainMotor(int direction, int increment) {

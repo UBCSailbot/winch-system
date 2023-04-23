@@ -12,8 +12,8 @@
 #define STEP BIT4;
 #define DIR BIT2;
 
-//-- Port P1.0
-#define ON_MOTOR BIT0
+//-- Port P3.3
+#define ON_MOTOR BIT3
 
 #define OFF 0
 #define ON 1

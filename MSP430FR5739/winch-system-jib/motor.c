@@ -204,6 +204,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
             V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
             stopMainMotor();
             set_error(MMOTOR_FAULT);
+            motor_tracker.fault = 0;
             return ERROR;
         }
 
@@ -401,8 +402,6 @@ void setMotorSpeed(motor_speed_t speed_sel) {
 
 unsigned char checkMotorFaultAndClear(void) {
     unsigned char fault_tmp = motor_tracker.fault;
-    motor_tracker.fault = 0;
-
     return fault_tmp;
 }
 
@@ -475,21 +474,30 @@ __interrupt void TIMER1_B1_ISR (void) {
         {
             motor_tracker.steps = 0;
 
-            switch (motor_stat.direction) {
-            case CLOCKWISE:
+            if (motor_stat.position >= motor_tracker.last_position)
+            {
                 diff = motor_stat.position - motor_tracker.last_position;
-                break;
-
-            case ANTICLOCKWISE:
-                diff = motor_tracker.last_position - motor_stat.position;
-                break;
-
-            case REST:
-            default:
-                //-- VALIDATE THIS FORCE IT TO IGNORE CHECK
-                diff = EXPECTED_POS_DIFF;
-                break;
             }
+            else
+            {
+                diff = motor_tracker.last_position - motor_stat.position;
+            }
+
+//            switch (motor_stat.direction) {
+//            case CLOCKWISE:
+//                diff = motor_stat.position - motor_tracker.last_position;
+//                break;
+//
+//            case ANTICLOCKWISE:
+//                diff = motor_tracker.last_position - motor_stat.position;
+//                break;
+//
+//            case REST:
+//            default:
+//                //-- VALIDATE THIS FORCE IT TO IGNORE CHECK
+//                diff = EXPECTED_POS_DIFF;
+//                break;
+//            }
 
             if ( diff > EXPECTED_POS_DIFF + POS_FAULT_LIMIT || diff < EXPECTED_POS_DIFF - POS_FAULT_LIMIT ) {
                 motor_tracker.fault = 1;
