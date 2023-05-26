@@ -31,17 +31,25 @@
 #define SUPER_SLOW 1150     /* 20% duty */
 #define even_more_slow 1285 /* 10% duty */
 
+typedef enum {
+    GMOTOR_BACKWARD,
+    GMOTOR_FORWARD
+} gmotor_phase;
+
 //-- Initializes the gear motor - PWM and timeout
 void init_gearmotor(void);
 
 //-- Starts the gear motor to either forward (1) or backward (0) direction
-void startGearMotor(int forward, int speed, int timeout);
+void startGearMotor(gmotor_phase direction, int speed, int timeout);
 
 //-- Stops the gear motor from moving
 void stopGearMotor(void);
 
 //-- Returns the state of the motor
 int isGearMotorOn(void);
+
+//-- Returns the current direction of gear motor
+gmotor_phase getGearMotorPhase(void);
 
 
 #endif /* GEARMOTOR_H_ */

@@ -99,12 +99,12 @@ void init_gearmotor(void) {
  *
  *  Notes:      none
  */
-void startGearMotor(int forward, int speed, int timeout) {
+void startGearMotor(gmotor_phase direction, int speed, int timeout) {
 
     PJOUT &= ~MODE;     //-- FAST decay mode
 
     //-- Direction --
-    if (forward) PJOUT |= PHASE;
+    if (direction == GMOTOR_FORWARD) PJOUT |= PHASE;
     else PJOUT &= ~PHASE;
 
     PJOUT |= NSLEEP;    //-- IC active
@@ -169,6 +169,36 @@ void stopGearMotor(void) {
  */
 int isGearMotorOn(void) {
     return GearMotorOn;
+}
+
+/**
+ *  Name:       getGearMotorPhase
+ *
+ *
+ *  Purpose:    returns the current phase (direction) of the gearmotor
+ *
+ *  Params:     none
+ *
+ *  Return:     gmotor_phase
+ *                  - BACKWARD
+ *                  - FORWARD
+ *
+ *  Notes:      none
+ */
+gmotor_phase getGearMotorPhase(void)
+{
+    gmotor_phase cur_phase;
+
+    if (PJOUT & PHASE)
+    {
+        cur_phase = GMOTOR_FORWARD;
+    }
+    else
+    {
+        cur_phase = GMOTOR_BACKWARD;
+    }
+
+    return cur_phase;
 }
 
 #pragma vector = TIMER1_A0_VECTOR;

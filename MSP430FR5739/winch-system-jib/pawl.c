@@ -15,7 +15,6 @@
 #include "error.h"
 
 unsigned int motor_inc_tries = 0;
-unsigned int dir = 0;
 char move_cam = 0;
 
 /**
@@ -96,7 +95,7 @@ static t_ret_code disengageRight(unsigned int phase) {
         motor_inc_tries = 0;
 
         //-- Turn the motor on until it reaches
-        startGearMotor(FORWARD, MEDIUM, 200);
+        startGearMotor(GMOTOR_FORWARD, MEDIUM, 200);
 
         return COMPLETE;
 
@@ -126,7 +125,7 @@ static t_ret_code disengageRight(unsigned int phase) {
             incrementMainMotor(CLOCKWISE, 5);
 
             //-- Start gear motor again
-            startGearMotor(FORWARD, MEDIUM, 200);
+            startGearMotor(GMOTOR_FORWARD, MEDIUM, 200);
         }
 
         return RUN_AGAIN;
@@ -155,7 +154,7 @@ static t_ret_code disengageLeft(unsigned int phase) {
 
         motor_inc_tries = 0;
 
-        startGearMotor(BACKWARD, MEDIUM, 200);
+        startGearMotor(GMOTOR_BACKWARD, MEDIUM, 200);
 
         return COMPLETE;
     } else {    //-- RUN_PAWL
@@ -185,7 +184,7 @@ static t_ret_code disengageLeft(unsigned int phase) {
             incrementMainMotor(ANTICLOCKWISE, 5);
 
             //-- Start gear motor again
-            startGearMotor(BACKWARD, MEDIUM, 200);
+            startGearMotor(GMOTOR_BACKWARD, MEDIUM, 200);
         }
 
         return RUN_AGAIN;
@@ -196,11 +195,12 @@ t_ret_code engageBoth(unsigned int phase) {
     int cam;
     int err;
     unsigned int spi_tries = 0;
+    gmotor_phase gmotor_dir;
 
     if (phase == INIT_PAWL) {
 
         //-- set direction to backward
-        dir = BACKWARD;
+        gmotor_dir = GMOTOR_BACKWARD;
 
         err = receive_hallsensors(NULL, &cam, NULL);
 
@@ -217,20 +217,22 @@ t_ret_code engageBoth(unsigned int phase) {
 
         if (cam > CAM_MID) {
             //-- Go backward
-            dir = BACKWARD;
+            gmotor_dir = GMOTOR_BACKWARD;
         } else {
             //-- Go forward
-            dir = FORWARD;
+            gmotor_dir = GMOTOR_FORWARD;
         }
 
         motor_inc_tries = 0;
 
-        startGearMotor(dir, SLOW, 1000);
+        startGearMotor(gmotor_dir, SLOW, 1000);
 
         move_cam = 1;
         return COMPLETE;
 
     } else {    //-- RUN_PAWL
+
+        gmotor_dir = getGearMotorPhase();
 
         do{
             err = receive_hallsensors(NULL, &cam, NULL);
@@ -245,8 +247,8 @@ t_ret_code engageBoth(unsigned int phase) {
 
             //-- Move in the reverse direction to counter-act inertia only if
             if (move_cam) {
-                dir ^= FORWARD;
-                startGearMotor(dir, SLOW, 50);
+                gmotor_dir ^= GMOTOR_FORWARD;
+                startGearMotor(gmotor_dir, SLOW, 50);
                 move_cam = 0;
             }
 
@@ -254,14 +256,14 @@ t_ret_code engageBoth(unsigned int phase) {
         }
 
         //-- If cam value is positive and dir is forward. Reverse
-        if (cam < CAM_MID && dir == BACKWARD || cam > CAM_MID && dir == FORWARD) {
+        if (cam < CAM_MID && gmotor_dir == GMOTOR_BACKWARD || cam > CAM_MID && gmotor_dir == GMOTOR_FORWARD) {
             stopGearMotor();
 
             //-- toggle direction
-            dir ^= FORWARD;
-            V_PRINTF("GM_DIR_CH: %d\r\n", dir);
+            gmotor_dir ^= GMOTOR_FORWARD;
+            V_PRINTF("GM_DIR_CH: %d\r\n", gmotor_dir);
             //-- Reverse gear motor
-            startGearMotor(dir, SLOW, 1000);
+            startGearMotor(gmotor_dir, SLOW, 1000);
         }
 
 
@@ -271,9 +273,9 @@ t_ret_code engageBoth(unsigned int phase) {
                 return ERROR;
             }
 
-            startGearMotor(dir, SLOW, 1000);
+            startGearMotor(gmotor_dir, SLOW, 1000);
 
-            V_PRINTF("GM_DIR: %d\r\n", dir);
+            V_PRINTF("GM_DIR: %d\r\n", gmotor_dir);
         }
 
         return RUN_AGAIN;
