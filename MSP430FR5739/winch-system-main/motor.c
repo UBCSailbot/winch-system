@@ -8,6 +8,7 @@
 #include "motor.h"
 #include "debug.h"
 #include "error.h"
+#include "pawl.h"
 
 int motor_increment;
 unsigned int motor_tries = 0;
@@ -145,6 +146,7 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
     if (phase == INIT_MMOTOR) {
         WAIT_RAMPING_DOWN = 0;
         motor_tracker.fault = 0;
+        motor_tracker.initial_position = motor_stat.position;
 
         if (motor_stat.setpoint > 360){
             set_error(INVALID_SETPOINT);
@@ -199,11 +201,22 @@ t_ret_code setMainMotorPosition(unsigned int phase) {
             return ERROR;
         }
 
-        if (checkMotorFaultAndClear()) {
+        if (checkMotorFault()) {
             V_PRINTF("FAULT diff:%d dir:%d", difference, motor_stat.direction)
             stopMainMotor();
-            set_error(MMOTOR_FAULT);
             motor_tracker.fault = 0;
+
+            // If MMotor is in the same position (Stuck due to pawl or external force) retry with a certain pawl threshold offset
+            if (motor_stat.position == motor_tracker.initial_position && !motor_stat.set_threshoffset)
+            {
+                // Increment pawl thresh offset by constant
+                setThreshOffsetConst();
+                motor_stat.set_threshoffset = 1;
+                return RESTART;
+            }
+
+            set_error(MMOTOR_FAULT);
+            motor_stat.set_threshoffset = 0;
             return ERROR;
         }
 
@@ -406,7 +419,7 @@ void setMotorSpeed(motor_speed_t speed_sel) {
     }
 }
 
-unsigned char checkMotorFaultAndClear(void) {
+unsigned char checkMotorFault(void) {
     unsigned char fault_tmp = motor_tracker.fault;
     return fault_tmp;
 }
