@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "error.h"
 
-unsigned int motor_inc_tries = 0;
+
 unsigned int dir = 0;
 char move_cam = 0;
 
@@ -77,9 +77,11 @@ t_ret_code move_pawl(unsigned int phase) {
 static t_ret_code disengageRight(unsigned int phase) {
     unsigned int pawl_right;
     int err;
-    unsigned int spi_tries = 0;
 
     if (phase == INIT_PAWL) {
+
+        initPawlStatStruct();
+
         err = receive_hallsensors(NULL, NULL, &pawl_right);
 
         //-- Error checking to see if we could receive pawl_right data
@@ -88,12 +90,9 @@ static t_ret_code disengageRight(unsigned int phase) {
             return ERROR;
         }
 
-        if (pawl_right <= RIGHT_THRES) {
+        if (pawl_right <= RIGHT_THRES - pawl_stat.threshold_offset) {
             return COMPLETE;
         }
-
-        //-- Keeps track of the number of times the main motor rotated to unlock the pawls
-        motor_inc_tries = 0;
 
         //-- Turn the motor on until it reaches
         startGearMotor(FORWARD, MEDIUM, 200);
@@ -102,15 +101,20 @@ static t_ret_code disengageRight(unsigned int phase) {
 
     } else {    //-- RUN_PAWL
 
-        do{
-            err = receive_hallsensors(NULL, NULL, &pawl_right);
-            if (++spi_tries > MAX_TRIES) {
+        err = receive_hallsensors(NULL, NULL, &pawl_right);
+        if (err) {
+            if (++pawl_stat.spi_tries > MAX_TRIES) {
                 set_error(MAX_SPI_TRIES);
                 return ERROR;
             }
-        } while (err);
 
-        if (pawl_right <= RIGHT_THRES) {
+            return RUN_AGAIN;
+        }
+        else {
+            pawl_stat.spi_tries = 0;
+        }
+
+        if (pawl_right <= RIGHT_THRES - pawl_stat.threshold_offset) {
             stopGearMotor();
             while (isMotorRunning());
             return COMPLETE;
@@ -118,7 +122,7 @@ static t_ret_code disengageRight(unsigned int phase) {
 
         if (!isGearMotorOn() && !isMotorRunning()) {
             //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) {
+            if (++pawl_stat.motor_inc_tries > MAX_TRIES) {
                 set_error(MAX_MOTOR_INC);
                 return ERROR;
             }
@@ -135,10 +139,11 @@ static t_ret_code disengageRight(unsigned int phase) {
 
 static t_ret_code disengageLeft(unsigned int phase) {
     unsigned int pawl_left;
-    unsigned int spi_tries = 0;
     int err;
 
     if (phase == INIT_PAWL) {
+
+        initPawlStatStruct();
 
         err = receive_hallsensors(&pawl_left, NULL, NULL);
 
@@ -148,36 +153,40 @@ static t_ret_code disengageLeft(unsigned int phase) {
             return ERROR;
         }
 
-        if (pawl_left <= LEFT_THRES) {
+        if (pawl_left <= LEFT_THRES - pawl_stat.threshold_offset) {
             //-- Already disengaged (Why?)
             return COMPLETE;
         }
 
-        motor_inc_tries = 0;
-
         startGearMotor(BACKWARD, MEDIUM, 200);
 
         return COMPLETE;
+
     } else {    //-- RUN_PAWL
 
-        do{
-            err = receive_hallsensors(&pawl_left, NULL, NULL);
-            if (++spi_tries > MAX_TRIES) {
-                set_error(MAX_SPI_TRIES);
-                return ERROR;
+        err = receive_hallsensors(&pawl_left, NULL, NULL);
+        if (err) {
+            if (++pawl_stat.spi_tries > MAX_TRIES) {
+             set_error(MAX_SPI_TRIES);
+             return ERROR;
             }
-        } while (err);
 
-        if (pawl_left <= LEFT_THRES) {
+            return RUN_AGAIN;
+        }
+        else {
+            pawl_stat.spi_tries = 0;
+        }
+
+
+        if (pawl_left <= LEFT_THRES - pawl_stat.threshold_offset) {
             stopGearMotor();
             while (isMotorRunning());
             return COMPLETE;
         }
 
         if (!isGearMotorOn() && !isMotorRunning()) {
-
             //-- If gear motor has timed out
-            if (++motor_inc_tries > MAX_TRIES) {
+            if (++pawl_stat.motor_inc_tries > MAX_TRIES) {
                 set_error(MAX_MOTOR_INC);
                 return ERROR;
             }
@@ -195,9 +204,10 @@ static t_ret_code disengageLeft(unsigned int phase) {
 t_ret_code engageBoth(unsigned int phase) {
     int cam;
     int err;
-    unsigned int spi_tries = 0;
 
     if (phase == INIT_PAWL) {
+
+        initPawlStatStruct();
 
         //-- set direction to backward
         dir = BACKWARD;
@@ -223,8 +233,6 @@ t_ret_code engageBoth(unsigned int phase) {
             dir = FORWARD;
         }
 
-        motor_inc_tries = 0;
-
         startGearMotor(dir, SLOW, 1000);
 
         move_cam = 1;
@@ -232,13 +240,18 @@ t_ret_code engageBoth(unsigned int phase) {
 
     } else {    //-- RUN_PAWL
 
-        do{
-            err = receive_hallsensors(NULL, &cam, NULL);
-            if (++spi_tries > MAX_TRIES) {
-                set_error(MAX_SPI_TRIES);
-                return ERROR;
+        err = receive_hallsensors(NULL, &cam, NULL);
+        if (err) {
+            if (++pawl_stat.spi_tries > MAX_TRIES) {
+             set_error(MAX_SPI_TRIES);
+             return ERROR;
             }
-        } while (err == -1);
+
+            return RUN_AGAIN;
+        }
+        else {
+            pawl_stat.spi_tries = 0;
+        }
 
         if (cam <= CAM_THRES_UPPER && cam >= CAM_THRES_LOWER) {
             stopGearMotor();
@@ -266,7 +279,7 @@ t_ret_code engageBoth(unsigned int phase) {
 
 
         if (!isGearMotorOn()) {
-            if (++motor_inc_tries > MAX_TRIES) {
+            if (++pawl_stat.motor_inc_tries > MAX_TRIES) {
                 set_error(MAX_MOTOR_INC);
                 return ERROR;
             }
@@ -278,6 +291,25 @@ t_ret_code engageBoth(unsigned int phase) {
 
         return RUN_AGAIN;
     }
+}
+
+void setThreshOffsetConst(void)
+{
+    temp_threshoff = RIGHT_LEFT_THRES_OFFSET;
+}
+
+unsigned int getAndClearThreshOffset(void)
+{
+    unsigned int ret_threshoff = temp_threshoff;
+    temp_threshoff = 0;
+    return ret_threshoff;
+}
+
+static void initPawlStatStruct(void)
+{
+    pawl_stat.motor_inc_tries = 0;
+    pawl_stat.spi_tries = 0;
+    pawl_stat.threshold_offset = getAndClearThreshOffset();
 }
 
 

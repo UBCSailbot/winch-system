@@ -86,6 +86,7 @@ typedef struct motor_status_struct {
     volatile unsigned char motor_inc_stat;
     volatile unsigned char accel;
     volatile unsigned char running;
+    unsigned char set_threshoffset;
 } motor_stat_t;
 
 //-- Tracks the main motor rotations for fault detection
@@ -93,6 +94,7 @@ typedef struct motor_tracker_struct {
     unsigned int steps;
     volatile unsigned int last_position;
     volatile unsigned char fault;
+    unsigned int initial_position;
 } motor_tracker_t;
 
 static motor_stat_t motor_stat;
@@ -145,6 +147,6 @@ unsigned int getCurrentCachedDirectionToMove(void);
 void setMotorSpeed(motor_speed_t speed_sel);
 
 // Checks if a fault occurs and clears it
-unsigned char checkMotorFaultAndClear(void);
+unsigned char checkMotorFault(void);
 
 #endif /* MOTOR_H_ */
