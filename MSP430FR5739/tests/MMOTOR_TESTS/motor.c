@@ -73,7 +73,7 @@ int incrementMainMotor(int direction, int increment) {
     }
 
     //-- Enable motor through motor controller
-    P1OUT |= ON_MOTOR;
+    P3OUT |= ON_MOTOR;
 
     motor_increment = increment;
 
@@ -136,7 +136,7 @@ int setMainMotorPosition(int position) {
     }
 
     //-- Enable motor through motor controller
-    P1OUT |= ON_MOTOR;
+    P3OUT |= ON_MOTOR;
 
     //******* Set speed **** [ML]
     TB1CCR0 = UPPER_COUNT_SUPER_SLOW - 1;
@@ -203,7 +203,7 @@ int setMainMotorPosition(int position) {
 void stopMainMotor(void) {
     TB1CTL &= ~MC_1;        // Hault PWM timer
     TB1CTL |= TBCLR;        // Clear timer count
-    P1OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
+    P3OUT &= ~ON_MOTOR;     // Disable Motor through motor controller
 
     TB1CCTL1 |= OUTMOD_0;    // Toggle reset mode
     TB1CCTL1 &= ~OUT;        // Force output to zero

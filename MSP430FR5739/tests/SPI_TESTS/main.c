@@ -11,7 +11,7 @@ enum test_type
 };
 
 //-- SELECT TEST TO BE PERFORMED HERE
-enum test_type test_sel = POT_T;
+enum test_type test_sel = CONF_T;
 
 //-- CONTROL
 #define VERBOSE 1
